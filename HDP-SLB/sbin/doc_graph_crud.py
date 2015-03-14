@@ -75,8 +75,13 @@ def _create_db_graph_objects(c_handle):
     return 'Success'
 
 
-def _checkin_json_doc(client_handle, json_string):
+_upsert_string = "update {} content {} upsert where artifact_name = '{}'"
+
+def _checkin_json_doc(client_handle, json_string, chkin_type):
     _return_flag = _create_db_graph_objects(client_handle)
+
+    _command_string = _upsert_string.format(chkin_type, json_string, 'well1')
+    _record_id = client_handle.command(_command_string)
 
     
 
