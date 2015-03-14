@@ -59,9 +59,16 @@ def _get_client_connection(conf_dict):
     return _client_handle
 
 
-def _do_action(action_type):
-    pass
+def _checkin_json_doc(client_handle, json_string):
+    _create_db_objects   
+ 
 
+def _do_action(checkin_json,artifact_name):
+    _config_dict = _initialize_credentials()
+    _client_handle = _get_client_connection(_config_dict)
+    _record_id = _checkin_json_doc(_client_handle, checkin_json)
+
+    print 'Processing checkin and checkout of artifacts'
 
 def parse_cl_options():
     parser = argparse.ArgumentParser(
@@ -72,31 +79,36 @@ def parse_cl_options():
         description="Module for SLB Artifact Management")
 
     parser.add_argument(
-        "-i",
         "--checkin",
         dest="checkin_doc",
         required=False,
         help="Specify the checkin JSON document file")
     parser.add_argument(
-        "-o",
         "--checkout",
         dest="artifact_name",
         required=False,
         help="Specify the artifact name to be checked out")
+    parser.add_argument(
+        "--checkin-type",
+        dest="checkin_type",
+        required=False,
+        help="Specify the artifact checkin artifact type e.g wells or survey")
+    parser.add_argument(
+        "--checkout-type",
+        dest="checkout_type",
+        required=False,
+        help="Specify the artifact checkout artifact type e.g wells or survey")
 
-    return parser.parse_args()
+    return parser
 
 
 def main():
-    args = parse_cl_options()
-    success_flag = _do_action(args.src_loc)
-
-    if success_flag:
-        print color("Successfully transferred merged file [ {0} ] to S3 bucket [ {1} ]".format(
-            args.tmpfile, args.tgt_loc), 'green')
+    parser = parse_cl_options()
+    args = parser.parse_args()
+    if args.checkin_doc or args.artifact_name:
+        success_flag = _do_action(args.checkin_doc,args.artifact_name)
     else:
-        print color("Error transfering merged file [ {0} ] to S3 bucket [ {1} ]".format(
-            args.tmpfile, args.tgt_loc), 'red')
+        parser.print_help()
 
 
 if __name__ == "__main__":
