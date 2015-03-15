@@ -2,12 +2,13 @@
 
 import argparse
 import sys
+import json
 from time import time
 from ConfigParser import ConfigParser
 from termcolor import colored as color
 import os
 from pyorient import OrientDB
-
+import pyorient
 
 
 
@@ -75,23 +76,29 @@ def _create_db_graph_objects(c_handle):
     return 'Success'
 
 
-_upsert_string = "update {} content {} upsert where artifact_name = '{}'"
+_upsert_string = "update {} content {} upsert where name = '{}'"
 
 def _checkin_json_doc(client_handle, json_string, chkin_type):
-    _return_flag = _create_db_graph_objects(client_handle)
+    #_return_flag = _create_db_graph_objects(client_handle)
 
-    _command_string = _upsert_string.format(chkin_type, json_string, 'well1')
-    _record_id = client_handle.command(_command_string)
-
+    client_handle.db_open("WellSurveyGraph", "admin", "admin")
+    _artifact_name = json.loads(json_string)['name']
+    print _artifact_name
     
+    _command_string = _upsert_string.format(chkin_type, json_string, _artifact_name)
+    _record_id = client_handle.command(_command_string)
+    return _record_id
 
-def _do_action(arguments,checkin_json,artifact_name):
+
+def _do_action(arguments):
     _config_dict = _initialize_credentials()
     _client_handle = _get_client_connection(_config_dict)
     _record_id = _checkin_json_doc(_client_handle, arguments.checkin_doc, arguments.checkin_type)
-    _record_id = _checkout_json_doc(_client_handle, arguments.artifact_name, arguments.checkout_type)
+    #_record_id = _checkout_json_doc(_client_handle, arguments.artifact_name, arguments.checkout_type)
 
-    print 'Processing checkin and checkout of artifacts'
+    print 'Created record {}'.format(_record_id)
+    return 'Success'
+
 
 def parse_cl_options():
     parser = argparse.ArgumentParser(
