@@ -77,7 +77,8 @@ def _create_db_graph_objects(c_handle):
 
 
 _upsert_string = "update {} content {} upsert where name = '{}'"
-_select_string = "select rid from {}  where name = '{}'"
+_select_string = "select from {}  where name = '{}'"
+
 
 def _checkin_json_doc(client_handle, json_string, chkin_type):
     #_return_flag = _create_db_graph_objects(client_handle)
@@ -88,10 +89,20 @@ def _checkin_json_doc(client_handle, json_string, chkin_type):
     _command_string = _upsert_string.format(chkin_type, json_string, _artifact_name)
     _response = client_handle.command(_command_string)
     _command_string = _select_string.format(chkin_type, _artifact_name)
-    _record_id = client_handle.query(_command_string)
-    print _record_id
-    print dir(_record_id)
-    return _record_id
+    _ridlist = client_handle.command(_command_string)
+
+    #print type(_response)
+
+    for i in _response:
+        #print type(i) 
+        pass
+    for i in _ridlist:
+        print i.name,i.rid 
+        #print dir(i)
+        print i.__dict__
+        print i.__dict__['_OrientRecord__o_storage']
+        print i.__dict__['_OrientRecord__o_storage']['address']
+    return _response
 
 
 def _do_action(arguments):
