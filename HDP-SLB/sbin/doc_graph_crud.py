@@ -10,6 +10,13 @@ import os
 from pyorient import OrientDB
 import pyorient
 
+_upsert_string = "update {} content {} upsert return after @rid where name = '{}'"
+_select_string = "select from {}  where name = '{}'"
+_link_artifact = "create edge Link set name = 'Explicit' from (select from V where name ='{}') to {}"
+                    
+_config_dict = _initialize_credentials()
+_client_handle = _get_client_connection(_config_dict)
+_client_handle.db_open("WellSurveyGraph", "admin", "admin")
 
 
 def _get_config_handle():
@@ -66,52 +73,75 @@ def _create_db_graph_objects(c_handle):
         c_handle.db_create("WellSurveyGraph", pyorient.DB_TYPE_GRAPH, pyorient.STORAGE_TYPE_PLOCAL)
         c_handle.db_open("WellSurveyGraph", "admin", "admin")
 
-        # Create SLB graph vertexs
-        c_handle.command('create class Wells extends V')
+        # Create SLB graph vertex and edges
+        c_handle.command('create class Folder extends V')
+        #c_handle.command('create property Folder.name STRING')
+        #c_handle.command('alter property Folder.name MANDATORY true')
+        c_handle.command('insert into Folder set name ="folder1"')
+
+        c_handle.command('create class WellCollection extends V')
+        #c_handle.command('create property WellCollection.name STRING')
+        #c_handle.command('alter property WellCollection.name MANDATORY true')
+        c_handle.command('insert into WellCollection set name ="wellcollection1"')
+
+        c_handle.command('create class Well extends V')
+        #c_handle.command('create property Well.name STRING')
+        #c_handle.command('alter property Well.name MANDATORY true')
         c_handle.command('create class Survey extends V')
-        c_handle.command('create class survey_belongs_to extends E')
+        #c_handle.command('create property Survey.name STRING')
+        #c_handle.command('alter property Survey.name MANDATORY true')
+        c_handle.command('create class Log extends V')
+        #c_handle.command('create property Log.name STRING')
+        #c_handle.command('alter property Log.name MANDATORY true')
+        c_handle.command('create class Link extends E')
+        #c_handle.command('create property Link.LinkType STRING')
+        #c_handle.command('alter property Link.LinkType MANDATORY true')
+
+        c_handle.command('create edge Link from (select from WellCollection) to (select from Folder)')
+
     except Exception as e:
         print color("Error creating graph database objects : " + e.message, 'red')
         sys.exit(1)
     return 'Success'
 
 
-_upsert_string = "update {} content {} upsert where name = '{}'"
-_select_string = "select from {}  where name = '{}'"
+def _put_json_doc(client_handle, json_string):
+
+    _json_data = json.loads(json_string)
+    _parent_name = _json_data['parent_name']
+    _artifact_type = _json_data['artifact_type']
+    _artifact_name = _json_data['payload']['name']
+    _data = _json_data['payload']['data']
+   
+    try:  
+        _command_string = _upsert_string.format(_artifact_type, _data, _artifact_name)
+        _response_rid = client_handle.command(_command_string)
+    except Exception as e:
+        print color("Error updating artifact : " + e.message, 'red')
+        sys.exit(1)
+
+    try:
+        _command_string = _link_artifact.format(_parent_name, _response_rid)
+        _return = client_handle.command(_command_string)
+    except Exception as e:
+        print color("Error updating artifact edge/link: " + e.message, 'red')
+        sys.exit(1)
+         
+    return _response_rid
+
+_get_command_string = "select from (select @rid from V where name = '{}')"
+
+def _get_artifact(artifact_name):
 
 
-def _checkin_json_doc(client_handle, json_string, chkin_type):
-    #_return_flag = _create_db_graph_objects(client_handle)
 
-    client_handle.db_open("WellSurveyGraph", "admin", "admin")
-    _artifact_name = json.loads(json_string)['name']
-    
-    _command_string = _upsert_string.format(chkin_type, json_string, _artifact_name)
-    _response = client_handle.command(_command_string)
-    _command_string = _select_string.format(chkin_type, _artifact_name)
-    _ridlist = client_handle.command(_command_string)
-
-    #print type(_response)
-
-    for i in _response:
-        #print type(i) 
-        pass
-    for i in _ridlist:
-        print i.name,i.rid 
-        #print dir(i)
-        print i.__dict__
-        print i.__dict__['_OrientRecord__o_storage']
-        print i.__dict__['_OrientRecord__o_storage']['address']
-    return _response
-
-
-def _do_action(arguments):
-    _config_dict = _initialize_credentials()
-    _client_handle = _get_client_connection(_config_dict)
-    _record_id = _checkin_json_doc(_client_handle, arguments.checkin_doc, arguments.checkin_type)
-    #_record_id = _checkout_json_doc(_client_handle, arguments.artifact_name, arguments.checkout_type)
-
-    print 'Created record {}'.format(_record_id)
+def _do_action_on_artifact(action_type, json_string, artifact_name):
+    if action_type in 'put':
+        _record_id = _put_json_doc(_client_handle, json_string)
+        print 'Created record {}'.format(_record_id)
+    elif action_type in 'get':
+        _json_doc = _get_artifact(artifact_name)
+        return _json_doc
     return 'Success'
 
 
