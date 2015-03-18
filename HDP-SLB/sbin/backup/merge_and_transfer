@@ -1,0 +1,245 @@
+#!/usr/bin/env python
+
+import argparse
+import sys
+from time import time
+from ConfigParser import ConfigParser
+from termcolor import colored as color
+from snakebite.client import Client
+import boto
+import boto.s3
+import os
+from boto.s3.key import Key as S3_KEY
+
+
+_transfer_msg = "File transfer progress to S3 [ {0} % ] : Bytes transfer [ {1} ]/[ {2} ]"
+
+
+def _get_config_handle():
+    try:
+        _config_handle = ConfigParser()
+        _config_handle.read('conf/data-transfer.conf')
+        return _config_handle
+    except Exception as e:
+        print "Error getting config handle : {0}".format(e.message)
+        sys.exit(1)
+
+
+def _initialize_credentials():
+    try:
+        _config_dict = {}
+        for option, value in _get_config_handle().items('MAIN'):
+            _config_dict[option] = value
+        return _config_dict
+    except Exception as e:
+        print "Error initializing credentials : {0}".format(e.message)
+        sys.exit(1)
+
+
+def _modify_config(section_name, config_name_value_dict):
+    try:
+        _config_handle = _get_config_handle()
+        for config_name, config_value in config_name_value_dict.iteritems():
+            _config_handle.set(section_name, config_name, config_value)
+        file_handle = open('conf/data-transfer.conf', 'w')
+        _config_handle.write(file_handle)
+        file_handle.close()
+    except Exception as e:
+        print "Error setting config {0} : {1}".format(config_name, e.message)
+        sys.exit(1)
+
+
+def _s3_connection(conf_dict):
+    try:
+        _s3_handle = boto.connect_s3(
+            conf_dict['aws_access_key_id'], conf_dict['aws_secret_access_key'])
+    except Exception as e:
+        print color("Error getting S3 connection handle : " + e.message, 'red')
+        sys.exit(1)
+    return _s3_handle
+
+
+def _get_client_connection(conf_dict):
+    try:
+        HOST = conf_dict['namenode_host']
+        PORT = int(conf_dict['namenode_port'])
+        USER = conf_dict['effective_user']
+        _hdfs_handle = Client(HOST, PORT, use_trash=False, effective_user=USER)
+    except Exception as e:
+        print color("Error getting HDFS connection : " + e.message, 'red')
+        sys.exit(1)
+    return _hdfs_handle
+
+
+def _merge_files(c_handle, source_loc, filename):
+    try:
+        _file_basename = os.path.basename(filename)
+        print "\nMerging all files from [ {0} ] to single file [ {1} ]".format(
+            source_loc, _file_basename)
+        response = c_handle.getmerge(
+            path=source_loc,
+            dst=_file_basename,
+            newline=False,
+            check_crc=False).next()
+    except Exception as e:
+        print color("Error merging files : " + e.message, 'red')
+        sys.exit(1)
+    return response['result']
+
+
+def _create_s3_bucket(s3_handle, bucket_name):
+    try:
+        _bucket_handle = s3_handle.create_bucket(
+            bucket_name, location=boto.s3.connection.Location.DEFAULT)
+    except Exception as e:
+        print color("Error creating S3 bucket : " + e.message, 'red')
+        sys.exit(1)
+    return _bucket_handle
+
+
+def _get_bucket_handle(s3_handle, bucket_name):
+    try:
+        _bucket_handle = s3_handle.get_bucket(bucket_name)
+    except Exception as e:
+        print color("Error getting handle for bucket {0} : {1}".format(
+            bucket_name,e.message), 'red')
+        sys.exit(1)
+    return _bucket_handle
+
+
+def _percent_cb(complete, total):
+    if complete == total:
+        _config_dict = {}   
+        _config_dict['total_bytes_processed'] = total
+        _modify_config('LAST-SEQUENCE', _config_dict)
+    progress_percent = ((complete * 100) / total)
+    progress_string = _transfer_msg.format(color(
+        progress_percent, 'white'), color(complete, 'white'), total)
+    sys.stdout.write("".ljust(50) + '\r')
+    sys.stdout.flush()
+    sys.stdout.write(progress_string.ljust(40) + '\r')
+    sys.stdout.flush()
+
+
+def _copy_files(target_loc, filename, conf_dict):
+    _s3_conn = _s3_connection(conf_dict)
+    #_s3_bucket_handle = _create_s3_bucket(_s3_conn,target_loc)
+    _s3_bucket_handle = _get_bucket_handle(_s3_conn, target_loc)
+
+    print "Transferring merged file [ {0} ] to S3 bucket [ {1} ]".format(
+        os.path.basename(filename), target_loc)
+    try:
+        _key_handle = S3_KEY(_s3_bucket_handle)
+        _key_handle.key = filename
+        _key_handle.set_contents_from_filename(
+            os.path.basename(filename), cb=_percent_cb, num_cb=1000)
+
+        # Downloading files from S3
+        #_key_handle.get_contents_to_filename('file_from_s3')
+
+        _s3_file_found = False
+        for file_key in _s3_bucket_handle.list():
+            if file_key.name == filename:
+                print color("\n\nS3 contains just transferred file [ {0} ]\n".format(
+                    file_key.name), 'green')
+                _s3_file_found = True
+                break
+        if not _s3_file_found:
+            print color("\nS3 does not contain just transferred file [ {0} ]".format(
+                filename), 'red')
+            return False
+    except Exception as e:
+        print color("Error transferring file to S3 : " + e.message, 'red')
+        return False
+    return True
+
+
+def _transfer_files(source_location, target_location, merge_filename):
+    _conf_dict = _initialize_credentials()
+    client_handle = _get_client_connection(_conf_dict)
+    _config_dict = {} 
+
+    _merge_start_time = int(time())
+    merge_resp = _merge_files(client_handle, source_location, merge_filename)
+    _merge_end_time = int(time())
+    _config_dict['merge_execution_time_taken_in_second'] = _merge_end_time - _merge_start_time
+    _modify_config('LAST-SEQUENCE', _config_dict)
+
+    if merge_resp:
+        print color("Merging of files was successful ...\n", 'green')
+    else:
+        print color("Merge failed ..." + merge_resp, 'red')
+        sys.exit(1)
+
+    _copy_start_time = int(time())
+    copy_resp = _copy_files(target_location, merge_filename, _conf_dict)
+    _copy_end_time = int(time())
+    _config_dict['copy_execution_time_taken_in_second'] = _copy_end_time - _copy_start_time
+    _modify_config('LAST-SEQUENCE', _config_dict)
+    return copy_resp
+
+
+def parse_cl_options():
+    parser = argparse.ArgumentParser(
+        prog='merge_and_transfer',
+        formatter_class=lambda prog: argparse.HelpFormatter(
+            prog,
+            max_help_position=100),
+        description="Module for data transfer between HDFS and S3 storage")
+
+    parser.add_argument(
+        "-s",
+        "--hdfssource",
+        dest="src_loc",
+        required=True,
+        help="Specify the hdfs source location")
+    parser.add_argument(
+        "-t"
+        "--targetbucket",
+        dest="tgt_loc",
+        required=True,
+        help="Specify the target S3 bucket")
+    parser.add_argument(
+        "--filetype",
+        dest="file_type",
+        required=False,
+        help="Specify the filetype e.g sequence")
+    parser.add_argument(
+        "--batchsize",
+        dest="batch_size",
+        required=False,
+        help="Specify the batch size e.g 1GB")
+    parser.add_argument(
+        "-m",
+        "--mergedtempfile",
+        dest="tmpfile",
+        required=True,
+        help="Specify the merge tempfile location")
+
+    return parser.parse_args()
+
+
+def main():
+    args = parse_cl_options()
+    _dict_list = {}
+    _start_time = int(time())
+
+    success_flag = _transfer_files(args.src_loc, args.tgt_loc, args.tmpfile)
+    _end_time = int(time())
+    if success_flag:
+        print color("Successfully transferred merged file [ {0} ] to S3 bucket [ {1} ]".format(
+            args.tmpfile, args.tgt_loc), 'green')
+    else:
+        print color("Error transfering merged file [ {0} ] to S3 bucket [ {1} ]".format(
+            args.tmpfile, args.tgt_loc), 'red')
+
+    print "\nSaving the current used option in config file ..."
+    _dict_list['source_location'] = args.src_loc
+    _dict_list['target_bucket'] = args.tgt_loc
+    _dict_list['merged_temp_file'] = args.tmpfile
+    _dict_list['total_execution_time_taken_in_second'] = _end_time - _start_time
+    _modify_config('LAST-SEQUENCE', _dict_list)
+    print color("Successfully saved the option in config file ...",'green')
+
+if __name__ == "__main__":
+    main()

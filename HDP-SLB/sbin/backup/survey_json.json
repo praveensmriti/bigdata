@@ -1,0 +1,1 @@
+{ "parent_name"		: "well1", "artifact_type"	: "survey", "payload"		: {      "name"		: "survey1", "welllocation" : "Sand Hills", "address"	: { "city" 	: "Sunnyvale", "country" 	: "US" } }  }

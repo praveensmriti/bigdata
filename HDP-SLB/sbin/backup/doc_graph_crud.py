@@ -101,99 +101,46 @@ def _create_db_graph_objects(c_handle):
         sys.exit(1)
     return 'Success'
 
-_upsert_string = "update {} content {} upsert return after @rid where name = '{}'"
-_select_string = "select from {}  where name = '{}'"
-_rid_string = "select  from V where name = '{}'"
-_link_artifact_final = "update Link set name = 'Explicit', out={},in={} \
-                          upsert where out={} and in={}"
-_get_string = "select from V where name = '{}'"
 
 def _put_json_doc(client_handle, json_string):
 
-    _json_data = json_string
+    _json_data = json.loads(json_string)
     _parent_name = _json_data['parent_name']
     _artifact_type = _json_data['artifact_type']
     _artifact_name = _json_data['payload']['name']
-    _data = json.dumps(_json_data['payload'])
+    _data = _json_data['payload']['data']
    
     try:  
         _command_string = _upsert_string.format(_artifact_type, _data, _artifact_name)
-        _response = client_handle.command(_command_string)
-        _rid = str(_response[0]).replace('##','#')
+        _response_rid = client_handle.command(_command_string)
     except Exception as e:
-        #print color("Error updating artifact : " + e.message, 'red')
-        return "Error updating artifact : " + e.message
-        #sys.exit(1)
+        print color("Error updating artifact : " + e.message, 'red')
+        sys.exit(1)
 
     try:
-        _parent_rid = client_handle.command(_rid_string.format(_parent_name))[0].rid
-        _command_string = _link_artifact_final.format(_parent_rid, _rid, _parent_rid, _rid)
+        _command_string = _link_artifact.format(_parent_name, _response_rid)
         _return = client_handle.command(_command_string)
     except Exception as e:
-        #print color("Error updating artifact edge/link: " + e.message, 'red')
-        return "Error updating artifact edge/link: " + e.message
-        #sys.exit(1) 
+        print color("Error updating artifact edge/link: " + e.message, 'red')
+        sys.exit(1)
          
-    return _rid
-'''
- "message": [
-    "_OrientRecord__o_class",
-    "_OrientRecord__o_storage",
-    "_OrientRecord__rid",
-    "_OrientRecord__version",
-    "__class__",
-    "__delattr__",
-    "__dict__",
-    "__doc__",
-    "__format__",
-    "__getattr__",
-    "__getattribute__",
-    "__hash__",
-    "__init__",
-    "__module__",
-    "__new__",
-    "__reduce__",
-    "__reduce_ex__",
-    "__repr__",
-    "__setattr__",
-    "__sizeof__",
-    "__str__",
-    "__subclasshook__",
-    "__weakref__",
-    "_in",
-    "_out",
-    "_set_keys",
-    "oRecordData",
-    "o_class",
-    "rid",
-    "update",
-    "version"
+    return {"response" : _response_rid}
 
-'''
 
 def _get_artifact(client_handle, artifact_name):
     _command_string = _get_string.format(artifact_name) 
-    _doc = client_handle.command(_command_string)
-    for i in _doc:
-        _mess = i.name
-        _tt = i.rid
-        _tt = dir(i)
-        _tt = i.oRecordData
-    _record = 'Artifact {} does not exists'.format(artifact_name)
-    if len(_doc) > 0:
-        _record = _doc[0].oRecordData
-  
-    #return json.dumps(_doc[0].__dict__['_OrientRecord_o_storage']) 
-    return _record
+    _doc = client_handle.command(_command_string)[0]
+    return _doc.__dict__['_OrientRecord_o_storage'] 
 
 
 def _do_action_on_artifact(action_type, json_string=None, artifact_name=None):
     if action_type in 'put':
         _record_id = _put_json_doc(_client_handle, json_string)
-        return {"message": _record_id}
+        #print 'Created record {}'.format(_record_id)
+        return _record_id
     elif action_type in 'get':
         _json_doc = _get_artifact(_client_handle, artifact_name)
-        return {"message": _json_doc }
+        return _json_doc
 
 
 def parse_cl_options():
@@ -236,12 +183,10 @@ def parse_cl_options():
 def main():
     parser = parse_cl_options()
     args = parser.parse_args()
-    print "Temporarily disabled. Will be enabled after verifying REST endpoint calls"
-    ''' Temporarily disabled
     if args.checkin_doc or args.artifact_name:
-        success_flag = _do_action_on_artifact(args)
+        success_flag = _do_action(args)
     else:
-        parser.print_help() '''
+        parser.print_help()
 
 
 try:

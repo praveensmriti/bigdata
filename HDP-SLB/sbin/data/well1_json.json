@@ -1,0 +1,16 @@
+{
+ "parent_name"		: "folder1",
+ "artifact_type"	: "well",
+ "payload"		:
+            			{      
+              			 "name"		: "well7",
+                                 "data" 	: {
+              			                    "welllocation" : "Sand Hills -- just now updated",
+               			                    "address"	: { "city" 	: "Sunnyvale",
+                                   		                    "country" 	: "US" }
+                                                  }
+                                }  
+}
+
+
+
