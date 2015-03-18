@@ -101,30 +101,36 @@ def _create_db_graph_objects(c_handle):
         sys.exit(1)
     return 'Success'
 
+_upsert_string = "update {} content {} upsert return after @rid where name = '{}'"
+_select_string = "select from {}  where name = '{}'"
+_link_artifact = "create edge Link set name = 'Explicit' from (select from V where name ='{}') to {}"
+_get_string = "select from (select @rid from V where name = '{}')"
 
 def _put_json_doc(client_handle, json_string):
 
-    _json_data = json.loads(json_string)
+    _json_data = json_string
     _parent_name = _json_data['parent_name']
     _artifact_type = _json_data['artifact_type']
     _artifact_name = _json_data['payload']['name']
-    _data = _json_data['payload']['data']
+    _data = json.dumps(_json_data['payload'])
    
     try:  
         _command_string = _upsert_string.format(_artifact_type, _data, _artifact_name)
         _response_rid = client_handle.command(_command_string)
     except Exception as e:
-        print color("Error updating artifact : " + e.message, 'red')
-        sys.exit(1)
+        #print color("Error updating artifact : " + e.message, 'red')
+        return "Error updating artifact : " + e.message
+        #sys.exit(1)
 
-    try:
+    '''try:
         _command_string = _link_artifact.format(_parent_name, _response_rid)
         _return = client_handle.command(_command_string)
     except Exception as e:
-        print color("Error updating artifact edge/link: " + e.message, 'red')
-        sys.exit(1)
+        #print color("Error updating artifact edge/link: " + e.message, 'red')
+        return "Error updating artifact edge/link: " + e.message
+        #sys.exit(1) '''
          
-    return {"response" : _response_rid}
+    return "Success"
 
 
 def _get_artifact(client_handle, artifact_name):
@@ -136,8 +142,7 @@ def _get_artifact(client_handle, artifact_name):
 def _do_action_on_artifact(action_type, json_string=None, artifact_name=None):
     if action_type in 'put':
         _record_id = _put_json_doc(_client_handle, json_string)
-        #print 'Created record {}'.format(_record_id)
-        return _record_id
+        return {"message": _record_id}
     elif action_type in 'get':
         _json_doc = _get_artifact(_client_handle, artifact_name)
         return _json_doc
@@ -183,10 +188,12 @@ def parse_cl_options():
 def main():
     parser = parse_cl_options()
     args = parser.parse_args()
+    print "Temporarily disabled. Will be enabled after verifying REST endpoint calls"
+    ''' Temporarily disabled
     if args.checkin_doc or args.artifact_name:
-        success_flag = _do_action(args)
+        success_flag = _do_action_on_artifact(args)
     else:
-        parser.print_help()
+        parser.print_help() '''
 
 
 try:
