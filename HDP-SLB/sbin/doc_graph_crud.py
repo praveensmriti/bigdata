@@ -14,10 +14,6 @@ _upsert_string = "update {} content {} upsert return after @rid where name = '{}
 _select_string = "select from {}  where name = '{}'"
 _link_artifact = "create edge Link set name = 'Explicit' from (select from V where name ='{}') to {}"
                     
-_config_dict = _initialize_credentials()
-_client_handle = _get_client_connection(_config_dict)
-_client_handle.db_open("WellSurveyGraph", "admin", "admin")
-
 
 def _get_config_handle():
     try:
@@ -129,10 +125,13 @@ def _put_json_doc(client_handle, json_string):
          
     return _response_rid
 
-_get_command_string = "select from (select @rid from V where name = '{}')"
+_get_string = "select from (select @rid from V where name = '{}')"
 
-def _get_artifact(artifact_name):
 
+def _get_artifact(client_handle, artifact_name):
+    _command_string = _get_string.format(artifact_name) 
+    _doc = client_handle.command(_command_string)[0]
+    return _doc.__dict__['_OrientRecord_o_storage'] 
 
 
 def _do_action_on_artifact(action_type, json_string, artifact_name):
@@ -140,7 +139,7 @@ def _do_action_on_artifact(action_type, json_string, artifact_name):
         _record_id = _put_json_doc(_client_handle, json_string)
         print 'Created record {}'.format(_record_id)
     elif action_type in 'get':
-        _json_doc = _get_artifact(artifact_name)
+        _json_doc = _get_artifact(_client_handle, artifact_name)
         return _json_doc
     return 'Success'
 
@@ -190,6 +189,9 @@ def main():
     else:
         parser.print_help()
 
+_config_dict = _initialize_credentials()
+_client_handle = _get_client_connection(_config_dict)
+_client_handle.db_open("WellSurveyGraph", "admin", "admin")
 
 if __name__ == "__main__":
     main()
