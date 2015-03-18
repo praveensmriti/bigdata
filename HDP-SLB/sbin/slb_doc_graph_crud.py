@@ -103,7 +103,14 @@ def _create_db_graph_objects(c_handle):
 
 _upsert_string = "update {} content {} upsert return after @rid where name = '{}'"
 _select_string = "select from {}  where name = '{}'"
+
+
+'''update MyEdgeClass set myField=true, out=#12:0, in=#13:0 upsert where 
+out=#12:0 and in=#13:0 '''
+
 _link_artifact = "create edge Link set name = 'Explicit' from (select from V where name ='{}') to {}"
+_link_artifact1 = "update Link set name = 'Explicit', out=(select from V where name ='{}'),in={} \
+                   upsert where out=(select from V where name='{}') and in={}"
 _get_string = "select from (select @rid from V where name = '{}')"
 
 def _put_json_doc(client_handle, json_string):
@@ -116,21 +123,22 @@ def _put_json_doc(client_handle, json_string):
    
     try:  
         _command_string = _upsert_string.format(_artifact_type, _data, _artifact_name)
-        _response_rid = client_handle.command(_command_string)
+        _response = client_handle.command(_command_string)
+        _rid = str(_response[0]).replace('##','#')
     except Exception as e:
         #print color("Error updating artifact : " + e.message, 'red')
         return "Error updating artifact : " + e.message
         #sys.exit(1)
 
-    '''try:
-        _command_string = _link_artifact.format(_parent_name, _response_rid)
+    try:
+        _command_string = _link_artifact1.format(_parent_name, _rid, _parent_name, _rid)
         _return = client_handle.command(_command_string)
     except Exception as e:
         #print color("Error updating artifact edge/link: " + e.message, 'red')
         return "Error updating artifact edge/link: " + e.message
-        #sys.exit(1) '''
+        #sys.exit(1) 
          
-    return "Success"
+    return _rid
 
 
 def _get_artifact(client_handle, artifact_name):
