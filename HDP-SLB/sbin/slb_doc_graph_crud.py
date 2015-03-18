@@ -11,11 +11,15 @@ from pyorient import OrientDB
 import pyorient
 
 # Skeleton strings
-_upsert_string       = "update {} content {} upsert return after @rid where name = '{}'"
-_select_string       = "select from {}  where name = '{}'"
-_rid_string          = "select  from V where name = '{}'" # will removed later
-_link_artifact_final = "update Link set name = 'Explicit', out={},in={} upsert where out={} and in={}"
-_get_string          = "select from V where name = '{}'"
+_upsert_string         = "update {} content {} upsert return after @rid where name = '{}'"
+_select_string         = "select from {}  where name = '{}'"
+_rid_string            = "select  from V where name = '{}'" # will removed later
+_link_artifact_final1  = "update Link set name = 'Explicit', out={},in={} upsert where out={} and in={}"
+
+_link_artifact_final   = "create edge Link set LinkType = 'Explicit' from {} to {}"
+_link_exists           = "select from Link where out={} and in={}"
+
+_get_string            = "select from V where name = '{}'"
 
 
 def _get_config_handle():
@@ -76,12 +80,13 @@ def _create_db_graph_objects(c_handle):
         c_handle.command('create class Folder extends V')
         #c_handle.command('create property Folder.name STRING')
         #c_handle.command('alter property Folder.name MANDATORY true')
-        c_handle.command('insert into Folder set name ="folder1"')
+        #c_handle.command('insert into Folder set name ="folder1"')
+        c_handle.command('insert into Folder content {"name":"folder1","city":"Sunnyvale"}')
 
         c_handle.command('create class WellCollection extends V')
         #c_handle.command('create property WellCollection.name STRING')
         #c_handle.command('alter property WellCollection.name MANDATORY true')
-        c_handle.command('insert into WellCollection set name ="wellcollection1"')
+        c_handle.command('insert into WellCollection content {"name":"wellcollection1"}')
 
         c_handle.command('create class Well extends V')
         #c_handle.command('create property Well.name STRING')
@@ -124,8 +129,12 @@ def _put_json_doc(client_handle, json_string):
 
     try:
         _parent_rid = client_handle.command(_rid_string.format(_parent_name))[0].rid
-        _command_string = _link_artifact_final.format(_parent_rid, _rid, _parent_rid, _rid)
-        _return = client_handle.command(_command_string)
+        
+        _link_count = client_handle.command(_link_exists.format(_parent_rid, _rid))
+        if len(_link_count) ==  0:
+            #_command_string = _link_artifact_final.format(_parent_rid, _rid, _parent_rid, _rid)
+            _command_string = _link_artifact_final.format(_parent_rid, _rid)
+            _return = client_handle.command(_command_string)
     except Exception as e:
         #print color("Error updating artifact edge/link: " + e.message, 'red')
         return "Error updating artifact edge/link: " + e.message
@@ -137,9 +146,10 @@ def _get_artifact(client_handle, artifact_name):
 
     _command_string = _get_string.format(artifact_name) 
     _doc = client_handle.command(_command_string)
-    _record = 'Artifact {} does not exists'.format(artifact_name)
+    _record = {'message': 'Artifact {} does not exists'.format(artifact_name)}
 
     if len(_doc) > 0:
+        #_record = {'found': artifact_name}
         _record = _doc[0].oRecordData
   
     return _record
