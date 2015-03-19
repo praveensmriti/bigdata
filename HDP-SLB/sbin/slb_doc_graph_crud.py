@@ -10,15 +10,14 @@ import os
 from pyorient import OrientDB
 import pyorient
 
+
 # Skeleton strings
 _upsert_string         = "update {} content {} upsert return after @rid where name = '{}'"
 _select_string         = "select from {}  where name = '{}'"
 _rid_string            = "select  from V where name = '{}'" # will removed later
 _link_artifact_final1  = "update Link set name = 'Explicit', out={},in={} upsert where out={} and in={}"
-
 _link_artifact_final   = "create edge Link set LinkType = 'Explicit' from {} to {}"
 _link_exists           = "select from Link where out={} and in={}"
-
 _get_string            = "select expand( @this.exclude('out_Link').exclude('in_Link')) from V where name = '{}'"
 
 
@@ -129,18 +128,15 @@ def _put_json_doc(client_handle, json_string):
 
     try:
         _parent_rid = client_handle.command(_rid_string.format(_parent_name))[0].rid
-        
         _link_count = client_handle.command(_link_exists.format(_parent_rid, _rid))
+
         if len(_link_count) ==  0:
-            #_command_string = _link_artifact_final.format(_parent_rid, _rid, _parent_rid, _rid)
             _command_string = _link_artifact_final.format(_parent_rid, _rid)
             _return = client_handle.command(_command_string)
     except Exception as e:
-        #print color("Error updating artifact edge/link: " + e.message, 'red')
         return "Error updating artifact edge/link: " + e.message
-        #sys.exit(1) 
-         
     return _rid
+
 
 def _get_artifact(client_handle, artifact_name):
 
@@ -150,24 +146,24 @@ def _get_artifact(client_handle, artifact_name):
 
     if len(_doc) > 0:
         _record = _doc[0].oRecordData
-        #_record = dir(_doc[0])
-
-         
-    #return {"dir": _record,"record1": _record1,"record2": _doc[0].oRecordData.pop("in_link",None).pop("out_link",None) }
-    #return {"dir": _record,"record1": str(_doc[0].__dict__),"record2": x }
     return _record
+
+
+_relation_all_string = 'select '
+
+
+def _do_action_on_relation(action_type, artifact_name):
+
 
 
 def _do_action_on_artifact(action_type, json_string=None, artifact_name=None):
 
     if action_type in 'put':
         _record_id = _put_json_doc(_client_handle, json_string)
-
         return {"Record ID": _record_id}
 
     elif action_type in 'get':
         _json_doc = _get_artifact(_client_handle, artifact_name)
-
         return _json_doc 
 
 
@@ -204,7 +200,6 @@ def parse_cl_options():
         dest="parent_name",
         required=False,
         help="Specify the parent name for the artifact")
-
     return parser
 
 
