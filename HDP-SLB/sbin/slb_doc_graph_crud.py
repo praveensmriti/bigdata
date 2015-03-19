@@ -19,7 +19,7 @@ _link_artifact_final1  = "update Link set name = 'Explicit', out={},in={} upsert
 _link_artifact_final   = "create edge Link set LinkType = 'Explicit' from {} to {}"
 _link_exists           = "select from Link where out={} and in={}"
 
-_get_string            = "select from V where name = '{}'"
+_get_string            = "select expand( @this.exclude('out_Link').exclude('in_Link')) from V where name = '{}'"
 
 
 def _get_config_handle():
@@ -149,9 +149,12 @@ def _get_artifact(client_handle, artifact_name):
     _record = {'message': 'Artifact {} does not exists'.format(artifact_name)}
 
     if len(_doc) > 0:
-        #_record = {'found': artifact_name}
         _record = _doc[0].oRecordData
-  
+        #_record = dir(_doc[0])
+
+         
+    #return {"dir": _record,"record1": _record1,"record2": _doc[0].oRecordData.pop("in_link",None).pop("out_link",None) }
+    #return {"dir": _record,"record1": str(_doc[0].__dict__),"record2": x }
     return _record
 
 
