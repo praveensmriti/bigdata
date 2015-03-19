@@ -43,19 +43,19 @@ class ArtifactList(Resource):
 
 class ArtifactTreeAll(Resource):
     def get(self, artifact_name):
-        _return_json = dgc._do_action_on_artifact('get', None, artifact_name)
+        _return_json = dgc._do_action_on_relation('all', artifact_name)
         return jsonify(_return_json)
 
 
-class ArtifactTreeChilds(Resource):
+class ArtifactTreeChildren(Resource):
     def get(self, artifact_name):
-        _return_json = dgc._do_action_on_artifact('get', None, artifact_name)
+        _return_json = dgc._do_action_on_relation('children', artifact_name)
         return jsonify(_return_json)
 
 
-class ArtifactTreeParents(Resource):
+class ArtifactTreeParent(Resource):
     def get(self, artifact_name):
-        _return_json = dgc._do_action_on_artifact('get', None, artifact_name)
+        _return_json = dgc._do_action_on_relation('parent', artifact_name)
         return jsonify(_return_json)
 
 
@@ -63,8 +63,8 @@ class ArtifactTreeParents(Resource):
 api.add_resource(ArtifactList, '/api/v1/artifact')
 api.add_resource(Artifact, '/api/v1/artifact/<string:artifact_name>')
 api.add_resource(ArtifactTreeAll, '/api/v1/artifact/tree/all/<string:artifact_name>')
-api.add_resource(ArtifactTreeChilds, '/api/v1/artifact/tree/childs/<string:artifact_name>')
-api.add_resource(ArtifactTreeParents, '/api/v1/artifact/tree/parents/<string:artifact_name>')
+api.add_resource(ArtifactTreeChildren, '/api/v1/artifact/tree/children/<string:artifact_name>')
+api.add_resource(ArtifactTreeParent, '/api/v1/artifact/tree/parent/<string:artifact_name>')
 
 
 if __name__ == '__main__':

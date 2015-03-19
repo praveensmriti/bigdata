@@ -149,11 +149,19 @@ def _get_artifact(client_handle, artifact_name):
     return _record
 
 
-_relation_all_string = 'select '
+_relation_string = { "all"      : "select * from (traverse from {}) order by $depth",
+                     "children" : "select * from (traverse out('Link') from {}) order by $depth",
+                     "parent"   : "select * from (traverse in('Link') from {}) order by $depth" }
+
+
+def _validate_artifact(artifact_name):
+    pass 
 
 
 def _do_action_on_relation(action_type, artifact_name):
-
+    _exists_status = _validate_artifact(artifact_name)
+    if _exists_status['status'] == 'not valid':
+        return _exists_status
 
 
 def _do_action_on_artifact(action_type, json_string=None, artifact_name=None):
