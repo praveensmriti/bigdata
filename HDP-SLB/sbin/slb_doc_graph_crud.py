@@ -166,9 +166,9 @@ def _get_artifact(client_handle, artifact_name):
     return _record_message
 
 
-_relation_string = { "all" : "select expand(@this.exclude('out_Link').exclude('in_Link')) from (traverse * from {})",
-                     "children" : "select expand(@this.exclude('out_Link').exclude('in_Link')) from (traverse out('Link') from {})",
-                     "parent"   : "select expand(@this.exclude('out_Link').exclude('in_Link')) from (traverse in('Link') from {})" }
+_relation_string = { "all" : "select expand(@this.exclude('out_Link').exclude('in_Link')) from (traverse * from {}) where @class not in 'Link'",
+                     "children" : "select expand(@this.exclude('out_Link').exclude('in_Link')) from (traverse out('Link') from {}) where @class not in 'Link'",
+                     "parent"   : "select expand(@this.exclude('out_Link').exclude('in_Link')) from (traverse in('Link') from {}) where @class not in 'Link'" }
 
 
 
@@ -205,7 +205,10 @@ def _do_action_on_relation(action_type, artifact_name):
         _command_status = _client_handle.command(_command_string)
         for i in _command_status:
             _artifact_json = {}
-            _artifact_json[i.oRecordData['name']] = i.oRecordData
+            try:
+                _artifact_json[i.oRecordData['name']] = i.oRecordData
+            except:
+                _artifact_json['tempname'] = str(i.oRecordData)
             _traverse_dict['SLB-Artifact-Tree'].append(_artifact_json) 
 
         #return __message(str(_command_status[0].oRecordData))
