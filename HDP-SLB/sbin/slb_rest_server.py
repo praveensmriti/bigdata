@@ -38,7 +38,7 @@ class ArtifactList(Resource):
 
     def put(self):
         _return_json = dgc._do_action_on_artifact('put', request.json, None)
-        return _return_json
+        return jsonify(_return_json)
 
 
 class ArtifactTreeAll(Resource):

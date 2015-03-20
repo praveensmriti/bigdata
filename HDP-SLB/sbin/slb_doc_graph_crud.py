@@ -14,7 +14,8 @@ import pyorient
 # Skeleton strings
 _upsert_string         = "update {} content {} upsert return after @rid where name = '{}'"
 _select_string         = "select from {}  where name = '{}'"
-_rid_string            = "select  from V where name = '{}'" # will removed later
+_rid_string            = "select  from V where name = '{}'" 
+_type_string           = "select  from V where @class = '{}'" 
 _link_artifact_final1  = "update Link set name = 'Explicit', out={},in={} upsert where out={} and in={}"
 _link_artifact_final   = "create edge Link set LinkType = 'Explicit' from {} to {}"
 _link_exists           = "select from Link where out={} and in={}"
@@ -108,67 +109,116 @@ def _create_db_graph_objects(c_handle):
     return 'Success'
 
 
-def _put_json_doc(client_handle, json_string):
 
-    _json_data = json_string
-    _parent_name = _json_data['parent_name']
-    _artifact_type = _json_data['artifact_type']
-    _artifact_name = _json_data['payload']['name']
-    _data = json.dumps(_json_data['payload'])
+def _put_json_doc(client_handle, json_string):
+    
+    try:
+        _json_data = json_string
+
+        _parent_name = _json_data['parent_name']
+        if _parent_name is not None:
+            _parent_list = client_handle.command(_rid_string.format(_parent_name))
+            if len(_parent_list) > 0:
+                _parent_rid = _parent_list[0].rid
+            else:
+                return __message("Parent artifact {} does not exists".format(_parent_name))
+
+        _artifact_type = _json_data['artifact_type']
+        if _artifact_type is not None:
+            _type_list = client_handle.command(_type_string.format(_artifact_type))
+            if len(_type_list) == 0:
+                return __message("Artifact type {} does not exists".format(_artifact_type))
+        else:
+            return __message("Artifact type is null")
+
+        _artifact_name = _json_data['payload']['name']
+        _data = json.dumps(_json_data['payload'])
+    except Exception as e:
+        return __message("Error parsing json string : " + e.message) 
    
     try:  
         _command_string = _upsert_string.format(_artifact_type, _data, _artifact_name)
         _response = client_handle.command(_command_string)
         _rid = str(_response[0]).replace('##','#')
-
     except Exception as e:
-        #print color("Error updating artifact : " + e.message, 'red')
-        return "Error updating artifact : " + e.message
-        #sys.exit(1)
+        return __message("Error updating artifact : " + e.message)
 
     try:
-        _parent_rid = client_handle.command(_rid_string.format(_parent_name))[0].rid
+        #_parent_rid = client_handle.command(_rid_string.format(_parent_name))[0].rid
         _link_count = client_handle.command(_link_exists.format(_parent_rid, _rid))
 
-        if len(_link_count) ==  0:
+        if len(_link_count) ==  0 and _parent_name is not None :
             _command_string = _link_artifact_final.format(_parent_rid, _rid)
             _return = client_handle.command(_command_string)
     except Exception as e:
-        return "Error updating artifact edge/link: " + e.message
-    return _rid
+        return __message("Error updating artifact edge/link: " + e.message)
+    return __message("Record ID is " +  _rid)
 
 
 def _get_artifact(client_handle, artifact_name):
 
     _command_string = _get_string.format(artifact_name) 
     _doc = client_handle.command(_command_string)
-    _record = {'message': 'Artifact {} does not exists'.format(artifact_name)}
+    _record_message = {'SLB-Message': 'Artifact {} does not exists'.format(artifact_name)}
 
     if len(_doc) > 0:
-        _record = _doc[0].oRecordData
-    return _record
+        _record_message = _doc[0].oRecordData
+    return _record_message
 
 
-_relation_string = { "all"      : "select * from (traverse from {}) order by $depth",
-                     "children" : "select * from (traverse out('Link') from {}) order by $depth",
-                     "parent"   : "select * from (traverse in('Link') from {}) order by $depth" }
+_relation_string = { "all" : "select expand(@this.exclude('out_Link').exclude('in_Link')) from (traverse * from {})",
+                     "children" : "select expand(@this.exclude('out_Link').exclude('in_Link')) from (traverse out('Link') from {})",
+                     "parent"   : "select expand(@this.exclude('out_Link').exclude('in_Link')) from (traverse in('Link') from {})" }
+
+
+
+def __message(message):
+    return {'SLB-Message' : message}
 
 
 def _validate_artifact(artifact_name):
-    pass 
+    _dict = {}
+    _command_string = _rid_string.format(artifact_name)
+    _command_status = _client_handle.command(_command_string)
+    
+    if len(_command_status) > 0:
+        _dict['rid'] = _command_status[0].rid
+    else:
+        return __message('Artifact {} does not exist'.format(artifact_name))
+
+    return _dict
+
 
 
 def _do_action_on_relation(action_type, artifact_name):
+
     _exists_status = _validate_artifact(artifact_name)
-    if _exists_status['status'] == 'not valid':
+
+    if 'rid' not in _exists_status:
         return _exists_status
+
+    _rid = _exists_status['rid']
+    _command_string = _relation_string[action_type].format(_rid)
+
+    try:
+        _traverse_dict = {'SLB-Artifact-Tree':[]}
+        _command_status = _client_handle.command(_command_string)
+        for i in _command_status:
+            _artifact_json = {}
+            _artifact_json[i.oRecordData['name']] = i.oRecordData
+            _traverse_dict['SLB-Artifact-Tree'].append(_artifact_json) 
+
+        #return __message(str(_command_status[0].oRecordData))
+        return _traverse_dict
+    except Exception as e:
+        return __message('Error executing relation command : ' + e.message)
 
 
 def _do_action_on_artifact(action_type, json_string=None, artifact_name=None):
 
     if action_type in 'put':
-        _record_id = _put_json_doc(_client_handle, json_string)
-        return {"Record ID": _record_id}
+        _json_doc = _put_json_doc(_client_handle, json_string)
+        return  _json_doc
 
     elif action_type in 'get':
         _json_doc = _get_artifact(_client_handle, artifact_name)
