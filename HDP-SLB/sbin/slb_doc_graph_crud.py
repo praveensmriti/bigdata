@@ -166,9 +166,12 @@ def _get_artifact(client_handle, artifact_name):
     return _record_message
 
 
-_relation_string = { "all" : "select expand(@this.exclude('out_Link').exclude('in_Link')) from (traverse * from {}) where @class not in 'Link'",
-                     "children" : "select expand(@this.exclude('out_Link').exclude('in_Link')) from (traverse out('Link') from {}) where @class not in 'Link'",
-                     "parent"   : "select expand(@this.exclude('out_Link').exclude('in_Link')) from (traverse in('Link') from {}) where @class not in 'Link'" }
+
+
+_relation_string_base = "select expand(@this.exclude('out_Link').exclude('in_Link')) from (traverse "
+_relation_string = { "all"      : _relation_string_base + "* from {}) where @class not in 'Link'",
+                     "children" : _relation_string_base + "out('Link') from {}) where @class not in 'Link'",
+                     "parent"   : _relation_string_base + "in('Link') from {}) where @class not in 'Link'" }
 
 
 
