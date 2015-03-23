@@ -115,7 +115,14 @@ def _put_json_doc(client_handle, json_string):
     try:
         _json_data = json_string
 
-        _parent_name = _json_data['parent_name']
+        #_parent_name = _json_data['parent_name']
+
+        if 'parent_name' not in _json_data:
+            _parent_name = None
+            _parent_rid = None
+        else:
+            _parent_name = _json_data['parent_name']
+
         if _parent_name is not None:
             _parent_list = client_handle.command(_rid_string.format(_parent_name))
             if len(_parent_list) > 0:
@@ -145,7 +152,9 @@ def _put_json_doc(client_handle, json_string):
 
     try:
         #_parent_rid = client_handle.command(_rid_string.format(_parent_name))[0].rid
-        _link_count = client_handle.command(_link_exists.format(_parent_rid, _rid))
+        _link_count = []
+        if _parent_rid is not None:
+            _link_count = client_handle.command(_link_exists.format(_parent_rid, _rid))
 
         if len(_link_count) ==  0 and _parent_name is not None :
             _command_string = _link_artifact_final.format(_parent_rid, _rid)
