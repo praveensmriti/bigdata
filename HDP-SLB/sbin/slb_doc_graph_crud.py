@@ -18,7 +18,8 @@ _rid_string            = "select  from V where aid = '{}'"
 _type_string           = "select  from V where @class = '{}'" 
 _link_artifact_final1  = "update Link set name = 'Explicit', out={},in={} upsert where out={} and in={}"
 _link_artifact_final   = "create edge Link set LinkType = 'Explicit' from {} to {}"
-_link_exists           = "select from Link where out={} and in={}"
+_link_exists           = "select from Link where out={} and in={} and LinkType ='Explicit'"
+_link_exists_c         = "select from Link where in={} and LinkType ='Explicit'"
 _get_string            = "select expand( @this.exclude('out_Link').exclude('in_Link')) from V where aid = '{}'"
 
 
