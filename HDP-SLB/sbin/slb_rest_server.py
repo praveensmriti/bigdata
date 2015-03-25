@@ -4,8 +4,10 @@ import slb_doc_graph_crud as dgc
 import json
 from flask import Flask, request, jsonify
 from flask.ext.restful import reqparse, abort, Api, Resource
+from flask.ext.cors import CORS
 
 app = Flask(__name__)
+cors = CORS(app)
 api = Api(app)
 
 _client_handle = dgc._client_handle
@@ -80,5 +82,5 @@ api.add_resource(ReadJsonDoc, '/api/v1/getjson/<string:json_file>')
 
 
 if __name__ == '__main__':
-    app.run('0.0.0.0')
+    app.run('0.0.0.0',port=8000)
 
