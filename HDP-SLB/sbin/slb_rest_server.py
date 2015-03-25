@@ -63,6 +63,11 @@ class ArtifactLinkUpdate(Resource):
         _return_json = dgc._do_action_on_link(link_type, parent_artifact_id, children_artifact_id)
         return jsonify(_return_json)
 
+class ReadJsonDoc(Resource):
+    def get(self, json_file):
+        _return_json = dgc._do_action_on_json(json_file)
+        return jsonify(_return_json)
+
 
 # Adding rest api resources
 api.add_resource(ArtifactList, '/api/v1/artifact')
@@ -71,6 +76,7 @@ api.add_resource(ArtifactTreeAll, '/api/v1/artifact/tree/all/<string:artifact_id
 api.add_resource(ArtifactTreeChildren, '/api/v1/artifact/tree/children/<string:artifact_id>')
 api.add_resource(ArtifactTreeParent, '/api/v1/artifact/tree/parent/<string:artifact_id>')
 api.add_resource(ArtifactLinkUpdate, '/api/v1/artifact/link/<string:link_type>/<string:parent_artifact_id>/<string:children_artifact_id>')
+api.add_resource(ReadJsonDoc, '/api/v1/getjson/<string:json_file>')
 
 
 if __name__ == '__main__':

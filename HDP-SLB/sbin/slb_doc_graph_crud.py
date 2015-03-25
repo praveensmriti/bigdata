@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import argparse
-import sys
+import sys, os
 import json
 from time import time
 from ConfigParser import ConfigParser
@@ -165,6 +165,7 @@ def _put_json_doc(client_handle, json_string):
     return __message("Record ID is " +  _rid)
 
 
+
 def _get_artifact(client_handle, artifact_id):
 
     _command_string = _get_string.format(artifact_id) 
@@ -203,6 +204,17 @@ def _validate_artifact(artifact_id):
 
     return _dict
 
+
+def _do_action_on_json(json_file):
+    try:
+        SITE_ROOT = os.path.realpath(os.path.dirname(__file__))
+        json_url = os.path.join(SITE_ROOT, "data", json_file)
+        if not os.path.exists(json_url):
+            return __message('File {} does not exists to be displayed'.format(json_file))
+        _data = json.load(open(json_url))
+    except Exception as e:
+        return __message("Error loading json file : " + e.messasge)
+    return _data
 
 
 def _do_action_on_relation(action_type, artifact_id):
