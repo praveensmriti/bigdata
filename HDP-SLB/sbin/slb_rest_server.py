@@ -73,7 +73,7 @@ class ReadJsonDoc(Resource):
         return jsonify(_return_json)
 
 
-# Adding rest api resources
+# Adding rest call api resources
 api.add_resource(ArtifactList, '/api/v1/artifact')
 api.add_resource(Artifact, '/api/v1/artifact/<string:artifact_id>')
 api.add_resource(ArtifactTreeAll, '/api/v1/artifact/tree/all/<string:artifact_id>')

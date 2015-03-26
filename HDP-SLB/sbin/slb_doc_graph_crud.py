@@ -113,34 +113,6 @@ def _create_db_graph_objects(c_handle, conf_dict):
             # Create SLB graph database
             c_handle.db_create(_slb_db, pyorient.DB_TYPE_GRAPH, pyorient.STORAGE_TYPE_PLOCAL)
             c_handle.db_open(_slb_db, _slb_db_user, _slb_db_pwd)
-       
-
-        # Create SLB graph vertex and edges
-        c_handle.command('create class Folder extends V')
-        #c_handle.command('create property Folder.name STRING')
-        #c_handle.command('alter property Folder.name MANDATORY true')
-        #c_handle.command('insert into Folder set name ="folder1"')
-        c_handle.command('insert into Folder content {"aid" : "folder1id","name":"folder1"}')
-
-        c_handle.command('create class WellCollection extends V')
-        #c_handle.command('create property WellCollection.name STRING')
-        #c_handle.command('alter property WellCollection.name MANDATORY true')
-        c_handle.command('insert into WellCollection content {"aid" : "wellcollection1id","name":"wellcollection1"}')
-
-        c_handle.command('create class Well extends V')
-        #c_handle.command('create property Well.name STRING')
-        #c_handle.command('alter property Well.name MANDATORY true')
-        c_handle.command('create class Survey extends V')
-        #c_handle.command('create property Survey.name STRING')
-        #c_handle.command('alter property Survey.name MANDATORY true')
-        c_handle.command('create class Log extends V')
-        #c_handle.command('create property Log.name STRING')
-        #c_handle.command('alter property Log.name MANDATORY true')
-        c_handle.command('create class Link extends E')
-        #c_handle.command('create property Link.LinkType STRING')
-        #c_handle.command('alter property Link.LinkType MANDATORY true')
-
-        c_handle.command('create edge Link set LinkType = "Explicit" from (select from Folder) to (select from WellCollection)')
 
     except Exception as e:
         print color("Error creating graph database objects : " + e.message, 'red')

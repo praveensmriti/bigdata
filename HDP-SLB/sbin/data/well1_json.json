@@ -1,9 +1,9 @@
 {
- "parent_id"		: "wellcollection1-id",
+ "parent_aid"		: "wellcollection1-id",
  "artifact_type"	: "Well",
  "payload"		:
-            			{"id"		: "well1-id",      
-              			 "name"		: "well1",
+            			{"aid"		: "well1-id",      
+              			 "aname"	: "well1",
                                  "data" 	: {
               			                    "welllocation" : "Sand Hills --  new value just now updated",
                			                    "address"	: { "city" 	: "Austin",

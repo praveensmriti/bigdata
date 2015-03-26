@@ -33,7 +33,7 @@
                    "alter property Link.LinkType MANDATORY true",
                    "let folder_rid = insert into Folder content {'aid' : 'folder1id','aname':'folder1'}",
                    "let wellcoll_rid = insert into WellCollection content {'aid' : 'wellcollection1id','aname':'wellcollection1'}",
-                   "create edge Link Set LinkType = 'Explicit'  from $folder_rid to $wellcoll_rid retry 100" ]
+                   "create edge Link Set LinkType = 'Explicitt'  from $folder_rid to $wellcoll_rid retry 100" ]
     }
   ]
 }
