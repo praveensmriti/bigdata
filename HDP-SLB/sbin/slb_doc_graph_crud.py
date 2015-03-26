@@ -31,6 +31,12 @@ _link_exists           = "select from Link where out={} and in={} and LinkType =
 _link_exists_c         = "select from Link where in={} and LinkType ='Explicit'"
 _get_string            = "select expand( @this.exclude('out_Link').exclude('in_Link')) from V where aid = '{}'"
 
+_relation_string_base  = "select expand(@this.exclude('out_Link').exclude('in_Link')) from (traverse "
+_relation_string       = { "all"      : _relation_string_base + "* from {}) where @class not in 'Link'",
+                           "children" : _relation_string_base + "out('Link') from {}) where @class not in 'Link'",
+                           "parent"   : _relation_string_base + "in('Link') from {}) where @class not in 'Link'" }
+
+
 
 def _get_config_handle():
     try:
@@ -97,11 +103,17 @@ def _get_client_connection(conf_dict):
     return _client_handle
 
 
-def _create_db_graph_objects(c_handle):
+def _create_db_graph_objects(c_handle, conf_dict):
     try:
-        # Create SLB graph database
-        c_handle.db_create("WellSurveyGraph", pyorient.DB_TYPE_GRAPH, pyorient.STORAGE_TYPE_PLOCAL)
-        c_handle.db_open("WellSurveyGraph", "admin", "admin")
+        if conf_dict['slb_db_create'] == 'yes':
+            _slb_db = conf_dict['slb_database']
+            _slb_db_user = conf_dict['slb_database_user']
+            _slb_db_pwd = conf_dict['slb_database_password']
+
+            # Create SLB graph database
+            c_handle.db_create(_slb_db, pyorient.DB_TYPE_GRAPH, pyorient.STORAGE_TYPE_PLOCAL)
+            c_handle.db_open(_slb_db, _slb_db_user, _slb_db_pwd)
+       
 
         # Create SLB graph vertex and edges
         c_handle.command('create class Folder extends V')
@@ -201,14 +213,6 @@ def _get_artifact(client_handle, artifact_id):
     if len(_doc) > 0:
         _record_message = _doc[0].oRecordData
     return _record_message
-
-
-
-
-_relation_string_base = "select expand(@this.exclude('out_Link').exclude('in_Link')) from (traverse "
-_relation_string = { "all"      : _relation_string_base + "* from {}) where @class not in 'Link'",
-                     "children" : _relation_string_base + "out('Link') from {}) where @class not in 'Link'",
-                     "parent"   : _relation_string_base + "in('Link') from {}) where @class not in 'Link'" }
 
 
 
