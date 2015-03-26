@@ -60,10 +60,12 @@ class ArtifactTreeParent(Resource):
         _return_json = dgc._do_action_on_relation('parent', artifact_id)
         return jsonify(_return_json)
 
+
 class ArtifactLinkUpdate(Resource):
     def get(self, link_type, parent_artifact_id, children_artifact_id):
         _return_json = dgc._do_action_on_link(link_type, parent_artifact_id, children_artifact_id)
         return jsonify(_return_json)
+
 
 class ReadJsonDoc(Resource):
     def get(self, json_file):

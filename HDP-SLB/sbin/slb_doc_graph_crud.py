@@ -66,12 +66,29 @@ def _modify_config(section_name, config_name_value_dict):
         sys.exit(1)
 
 
+'''orientdb_host_ip      = 192.168.56.101
+orientdb_host_name    = hdpclient.localdomain
+orientdb_binary_port  = 2424
+orientdb_rest_port    = 2480
+
+orientdb_user         = root
+orientdb_password     = slbroot
+
+slb_database          = WellSurveyGraph
+slb_database_user     = admin
+slb_database_password = admin
+
+o_slb_base_rest_url   = http://%(orientdb_host_name)s:%(orientdb_rest_port)s/query/%(slb_database)s/sql/{} '''
+
+
+
+
 def _get_client_connection(conf_dict):
     try:
-        HOST = conf_dict['orientdb_server_host']
-        PORT = int(conf_dict['orientdb_server_port'])
-        USER = conf_dict['orientdb_server_user']
-        PASSWORD = conf_dict['orientdb_server_password']
+        HOST = conf_dict['orientdb_host_name']
+        PORT = int(conf_dict['orientdb_binary_port'])
+        USER = conf_dict['orientdb_user']
+        PASSWORD = conf_dict['orientdb_password']
         _client_handle = OrientDB(HOST, PORT)
         _client_handle.connect(USER, PASSWORD)
     except Exception as e:
@@ -307,8 +324,14 @@ def main():
 try:
     _config_dict = _initialize_credentials()
     _client_handle = _get_client_connection(_config_dict)
-    #_db_status = _create_db_graph_objects(_client_handle)
-    _client_handle.db_open("WellSurveyGraph", "admin", "admin")
+
+    #_db_status = _create_db_graph_objects(_client_handle, _config_dict)
+
+    _slb_db = _config_dict['slb_database']
+    _slb_db_user = _config_dict['slb_database_user']
+    _slb_db_pwd = _config_dict['slb_database_password']
+    _client_handle.db_open(_slb_db, _slb_db_user, _slb_db_pwd)
+
 except Exception as e:
     print color("Error initializing SLB DB credential/connections: " + e.message, 'red')
     sys.exit(1)
