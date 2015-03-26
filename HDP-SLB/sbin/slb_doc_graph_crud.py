@@ -6,9 +6,18 @@ import json
 from time import time
 from ConfigParser import ConfigParser
 from termcolor import colored as color
+import requests as rq
 import os
 from pyorient import OrientDB
 import pyorient
+
+'''final_url = url_values[category_name]
+resp = requests.get(final_url, auth=(cm_username, cm_password))
+dict_list = resp.json().get("items") '''
+
+_base_url  = 'http://slb-orient.cloudapp.net:2480/query/WellSurveyGraph/sql/{}'
+_base_url  = 'http://{}:{}/query/{}/sql/{}'
+_base_url1 = 'http://{hostname}:{port}/query/{database-name}/sql/{query-string}'
 
 
 # Skeleton strings
