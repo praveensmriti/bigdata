@@ -1,14 +1,16 @@
 {
- "parent_name"		: "folder1",
- "artifact_type"	: "well",
+ "parent_id"		: "wellcollection1-id",
+ "artifact_type"	: "Well",
  "payload"		:
-            			{      
-              			 "name"		: "well7",
+            			{"id"		: "well1-id",      
+              			 "name"		: "well1",
                                  "data" 	: {
-              			                    "welllocation" : "Sand Hills -- just now updated",
-               			                    "address"	: { "city" 	: "Sunnyvale",
-                                   		                    "country" 	: "US" }
-                                                  }
+              			                    "welllocation" : "Sand Hills --  new value just now updated",
+               			                    "address"	: { "city" 	: "Austin",
+                                   		                    "country" 	: "USssss",
+                                                                    "zipcode" :   94025 }
+                                                  },
+                                 "NewColumn" : "newcolumn_value"
                                 }  
 }
 
