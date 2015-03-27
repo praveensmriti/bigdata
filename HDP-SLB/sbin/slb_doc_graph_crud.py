@@ -20,10 +20,11 @@ _type_string           = "select  from V where @class = '{}'"
 _link_artifact_final1  = "update Link set name = 'Explicit', out={},in={} upsert where out={} and in={}"
 _link_artifact_final   = "create edge Link set LinkType = 'Explicit' from {} to {}"
 _link_exists           = "select from Link where out={} and in={} and LinkType ='Explicit'"
-_link_exists_1         = "select @rid from Link where in={} and LinkType ='Explicit'"
+_link_exists_1         = "select @rid as rid from Link where in='{}' and LinkType ='Explicit'"
 _link_exists_c         = "select from Link where in={} and LinkType ='Explicit'"
 _get_string            = "select expand( @this.exclude('out_Link').exclude('in_Link')) from V where aid = '{}'"
 _exists_string         = "(select from V where aid = '{}')"
+_get_rid               = "select @rid as rid from V where aid = '{}'"
 
 _relation_string_base  = "select expand(@this.exclude('out_Link').exclude('in_Link')) from (traverse "
 _relation_string       = { "all"      : _relation_string_base + "* from {}) where @class not in 'Link'",
@@ -117,8 +118,6 @@ def _play_http_request(url, verb_type, json_doc=None):
 
     return __message(str(_resp))
     
-_get_rid = 'select @rid as rid from V where aid = {}'
-
 
 def _put_json_doc(json_string):
     
@@ -149,7 +148,7 @@ def _put_json_doc(json_string):
 
         _artifact_type = _json_data['artifact_type']
 
-        if _artifact_type is not None and _artifact_type.lower() in _artifact_type_list:
+        if _artifact_type is None or _artifact_type.lower() not in _artifact_type_list:
             return __message("Artifact type is invalid or null")
 
         _artifact_id = _json_data['payload']['aid']
@@ -160,34 +159,23 @@ def _put_json_doc(json_string):
    
     try:  
         _command_string = _upsert_string.format(_artifact_type, _data, _artifact_id)
-        _response = client_handle.command(_command_string)
+        _response = _client_handle.command(_command_string)
         _rid = str(_response[0]).replace('##','#')
     except Exception as e:
         return __message("Error updating artifact : " + e.message)
 
     try:
         if _parent_rid is not None:
-            _command_string = _link_exists_1.format(_rid)
+            _command_string = _link_exists_1.format(_rid.replace('#',''))
             _query_url = _config_dict['o_slb_base_rest_url'].format(_command_string)
             _resp = _play_http_request(_query_url, 'get')
 
             if len(_resp['result']) > 0:
                 _edge_rid = _resp['result'][0]['rid']
-                _return = _client_handle.command('delete Link')
+                _return = _client_handle.command("delete edge Link where @rid = '{}'".format(_edge_rid))
              
             _command_string = _link_artifact_final.format(_parent_rid, _rid)
-            _return = client_handle.command(_command_string)
-
-
-        '''
-        # Link update and creation
-        if _parent_rid is not None:
-            _link_count = client_handle.command(_link_exists.format(_parent_rid, _rid))
-
-        if len(_link_count) ==  0 and _parent_id is not None :
-            _command_string = _link_artifact_final.format(_parent_rid, _rid)
-            _return = client_handle.command(_command_string)
-        '''
+            _return = _client_handle.command(_command_string)
 
     except Exception as e:
         return __message("Error updating artifact edge/link: " + e.message)
