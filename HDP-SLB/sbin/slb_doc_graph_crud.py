@@ -30,11 +30,13 @@ _link_artifact_final   = "create edge Link set LinkType = 'Explicit' from {} to 
 _link_exists           = "select from Link where out={} and in={} and LinkType ='Explicit'"
 _link_exists_c         = "select from Link where in={} and LinkType ='Explicit'"
 _get_string            = "select expand( @this.exclude('out_Link').exclude('in_Link')) from V where aid = '{}'"
+_exists_string         = "(select from V where aid = '{}')"
 
 _relation_string_base  = "select expand(@this.exclude('out_Link').exclude('in_Link')) from (traverse "
 _relation_string       = { "all"      : _relation_string_base + "* from {}) where @class not in 'Link'",
                            "children" : _relation_string_base + "out('Link') from {}) where @class not in 'Link'",
                            "parent"   : _relation_string_base + "in('Link') from {}) where @class not in 'Link'" }
+
 
 
 
@@ -186,10 +188,11 @@ def _get_artifact(client_handle, artifact_id):
     _query_url = _config_dict['o_slb_base_rest_url'].format(_command_string)
     _resp = _play_http_request(_query_url, 'get')
 
+
     if len(_resp['result']) > 0:
         _resp_dict = _resp['result'][0]
         _resp_dict.pop("@type")
-        dresp_dict['artifact_type'] = _resp_dict.pop("@class")
+        _resp_dict['artifact_type'] = _resp_dict.pop("@class")
         _resp_dict['current_version'] = _resp_dict.pop("@version")
         _record_message = _resp_dict
 
@@ -257,7 +260,16 @@ def _do_action_on_relation1(action_type, artifact_id):
 
 def _do_action_on_relation(action_type, artifact_id):
 
-    _command_string = _relation_string[action_type].format(artifact_id)
+    _record_message = {'SLB-Message': 'Artifact {} does not exists'.format(artifact_id)}
+    _command_string = _relation_string[action_type].format(_exists_string.format(artifact_id))
+
+    _query_url = _config_dict['o_slb_base_rest_url'].format(_command_string)
+    _resp = _play_http_request(_query_url, 'get')
+
+    if len(_resp['result']) > 0:
+        _record_message = _resp
+
+    return _record_message
 
 
 def _do_action_on_artifact(action_type, json_string=None, artifact_id=None):
