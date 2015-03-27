@@ -10,7 +10,7 @@ app = Flask(__name__)
 cors = CORS(app)
 api = Api(app)
 
-_client_handle = dgc._client_handle
+#_client_handle = dgc._client_handle
 
 
 def abort_if_artifact_doesnt_exist(artifact_id):

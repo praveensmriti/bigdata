@@ -18,9 +18,10 @@ _select_string         = "select from {}  where aid = '{}'"
 _rid_string            = "select  from V where aid = '{}'" 
 _type_string           = "select  from V where @class = '{}'" 
 _link_artifact_final1  = "update Link set name = 'Explicit', out={},in={} upsert where out={} and in={}"
-_link_artifact_final   = "create edge Link set LinkType = 'Explicit' from {} to {}"
+_link_artifact_final   = "create edge Link set LinkType = '{}' from {} to {}"
 _link_exists           = "select from Link where out={} and in={} and LinkType ='Explicit'"
-_link_exists_1         = "select @rid as rid from Link where in='{}' and LinkType ='Explicit'"
+_link_exists_2         = "select @rid as rid from Link where in='{}' and LinkType ='{}'"
+_link_exists_1         = "select @rid as rid from Link where in='{}'"
 _link_exists_c         = "select from Link where in={} and LinkType ='Explicit'"
 _get_string            = "select expand( @this.exclude('out_Link').exclude('in_Link')) from V where aid = '{}'"
 _exists_string         = "(select from V where aid = '{}')"
@@ -174,7 +175,7 @@ def _put_json_doc(json_string):
                 _edge_rid = _resp['result'][0]['rid']
                 _return = _client_handle.command("delete edge Link where @rid = '{}'".format(_edge_rid))
              
-            _command_string = _link_artifact_final.format(_parent_rid, _rid)
+            _command_string = _link_artifact_final.format('Explicit', _parent_rid, _rid)
             _return = _client_handle.command(_command_string)
 
     except Exception as e:
@@ -262,6 +263,39 @@ def _do_action_on_relation(action_type, artifact_id):
         _record_message = _resp
 
     return _record_message
+
+
+_parent_child_exists = "select @rid as rid, aid from V where aid in ['{}','{}']"
+
+
+def _do_action_on_link(link_type, parent_aid, children_aid):
+    try:
+        _command_string = _parent_child_exists.format(parent_aid, children_aid)
+        _query_url = _config_dict['o_slb_base_rest_url'].format(_command_string)
+        _resp = _play_http_request(_query_url, 'get')
+
+        if len(_resp['result']) < 2:
+            return __message('Parent or Child aid is not valid')
+
+        for i in _resp['result']:
+            if i['aid'] == parent_aid:
+                _parent_rid = i['rid']
+                continue
+            _children_rid = i['rid'] 
+
+        _command_string = _link_exists_1.format(_children_rid.replace('#',''))
+        _query_url = _config_dict['o_slb_base_rest_url'].format(_command_string)
+        _resp = _play_http_request(_query_url, 'get')
+
+        if len(_resp['result']) > 0:
+            _edge_rid = _resp['result'][0]['rid']
+            _return = _client_handle.command("delete edge Link where @rid = '{}'".format(_edge_rid))
+
+        _command_string = _link_artifact_final.format(link_type, _parent_rid, _children_rid)
+        _return = _client_handle.command(_command_string)
+    except Exception as e:
+        return __message('Error creating link : ' + e.message)
+    return __message('Successfully created link between {} and {}'.format(parent_aid, children_aid))
 
 
 def _do_action_on_artifact(action_type, json_string=None, artifact_id=None):
