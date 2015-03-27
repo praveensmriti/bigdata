@@ -11,14 +11,6 @@ import os
 from pyorient import OrientDB
 import pyorient
 
-'''final_url = url_values[category_name]
-resp = requests.get(final_url, auth=(cm_username, cm_password))
-dict_list = resp.json().get("items") '''
-
-_base_url  = 'http://slb-orient.cloudapp.net:2480/query/WellSurveyGraph/sql/{}'
-_base_url  = 'http://{}:{}/query/{}/sql/{}'
-_base_url1 = 'http://{hostname}:{port}/query/{database-name}/sql/{query-string}'
-
 
 # Skeleton strings
 _upsert_string         = "update {} content {} upsert return after @rid where aid = '{}'"
@@ -28,6 +20,7 @@ _type_string           = "select  from V where @class = '{}'"
 _link_artifact_final1  = "update Link set name = 'Explicit', out={},in={} upsert where out={} and in={}"
 _link_artifact_final   = "create edge Link set LinkType = 'Explicit' from {} to {}"
 _link_exists           = "select from Link where out={} and in={} and LinkType ='Explicit'"
+_link_exists_1         = "select @rid from Link where in={} and LinkType ='Explicit'"
 _link_exists_c         = "select from Link where in={} and LinkType ='Explicit'"
 _get_string            = "select expand( @this.exclude('out_Link').exclude('in_Link')) from V where aid = '{}'"
 _exists_string         = "(select from V where aid = '{}')"
@@ -173,13 +166,20 @@ def _put_json_doc(json_string):
         return __message("Error updating artifact : " + e.message)
 
     try:
-        _command_string = _link_exists.format(_parent_rid, _rid)
-        _query_url = _config_dict['o_slb_base_rest_url'].format(_command_string)
-        _resp = _play_http_request(_query_url, 'get')
+        if _parent_rid is not None:
+            _command_string = _link_exists_1.format(_rid)
+            _query_url = _config_dict['o_slb_base_rest_url'].format(_command_string)
+            _resp = _play_http_request(_query_url, 'get')
 
-        if len(_resp['result']) > 0:
-            _parent_rid = _resp['result'][0]['rid']
+            if len(_resp['result']) > 0:
+                _edge_rid = _resp['result'][0]['rid']
+                _return = _client_handle.command('delete Link')
+             
+            _command_string = _link_artifact_final.format(_parent_rid, _rid)
+            _return = client_handle.command(_command_string)
 
+
+        '''
         # Link update and creation
         if _parent_rid is not None:
             _link_count = client_handle.command(_link_exists.format(_parent_rid, _rid))
@@ -187,6 +187,8 @@ def _put_json_doc(json_string):
         if len(_link_count) ==  0 and _parent_id is not None :
             _command_string = _link_artifact_final.format(_parent_rid, _rid)
             _return = client_handle.command(_command_string)
+        '''
+
     except Exception as e:
         return __message("Error updating artifact edge/link: " + e.message)
     return __message("Record ID is " +  _rid)
