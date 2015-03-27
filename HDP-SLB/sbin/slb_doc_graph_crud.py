@@ -125,36 +125,42 @@ def _play_http_request(url, verb_type, json_doc=None):
     return __message(str(_resp))
     
 
-def _put_json_doc(client_handle, json_string):
+def _put_json_doc(json_string):
     
     try:
         _json_data = json_string
+        _json_keys_out = _json_data.viewkeys()
+        _base_keys_out = {'parent_aid', 'artifact_type', 'payload'}
+        _base_keys_in  = {'aid', 'aname'}
+        _artifact_type_list = _config_dict['artifact_type_list'].strip().split(',')
 
-        #_parent_id = _json_data['parent_id']
+        if not _json_data.viewkeys() >= _base_keys_out: 
+            return __message('JSON doc does not have a right format (out base)')
+        elif not _json_data['payload'].viewkeys() >= _base_keys_in:
+            return __message('JSON doc does not have a right format (in base}')
+            
+        _parent_aid = _json_data['parent_aid']
+        _parent_rid = None
 
-        if 'parent_id' not in _json_data:
-            _parent_id = None
-            _parent_rid = None
-        else:
-            _parent_id = _json_data['parent_id']
-
-        if _parent_id is not None:
-            _parent_list = client_handle.command(_rid_string.format(_parent_id))
+        if _parent_aid is not None:
+            _parent_list = client_handle.command(_rid_string.format(_parent_aid))
             if len(_parent_list) > 0:
                 _parent_rid = _parent_list[0].rid
             else:
-                return __message("Parent artifact {} does not exists".format(_parent_id))
+                return __message("Parent artifact {} does not exists".format(_parent_aid))
 
         _artifact_type = _json_data['artifact_type']
-        if _artifact_type is not None:
+
+        if _artifact_type is not None and _artifact_type in _artifact_type_list:
             _type_list = client_handle.command(_type_string.format(_artifact_type))
             if len(_type_list) == 0:
                 return __message("Artifact type {} does not exists".format(_artifact_type))
         else:
-            return __message("Artifact type is null")
+            return __message("Artifact type is invalid or null")
 
-        _artifact_id = _json_data['payload']['name']
+        _artifact_id = _json_data['payload']['aid']
         _data = json.dumps(_json_data['payload'])
+
     except Exception as e:
         return __message("Error parsing json string : " + e.message) 
    
@@ -166,7 +172,6 @@ def _put_json_doc(client_handle, json_string):
         return __message("Error updating artifact : " + e.message)
 
     try:
-        #_parent_rid = client_handle.command(_rid_string.format(_parent_id))[0].rid
         _link_count = []
         if _parent_rid is not None:
             _link_count = client_handle.command(_link_exists.format(_parent_rid, _rid))
@@ -179,15 +184,12 @@ def _put_json_doc(client_handle, json_string):
     return __message("Record ID is " +  _rid)
 
 
-
 def _get_artifact(client_handle, artifact_id):
-
     _record_message = {'SLB-Message': 'Artifact {} does not exists'.format(artifact_id)}
     _command_string = _get_string.format(artifact_id)
 
     _query_url = _config_dict['o_slb_base_rest_url'].format(_command_string)
     _resp = _play_http_request(_query_url, 'get')
-
 
     if len(_resp['result']) > 0:
         _resp_dict = _resp['result'][0]
@@ -195,13 +197,6 @@ def _get_artifact(client_handle, artifact_id):
         _resp_dict['artifact_type'] = _resp_dict.pop("@class")
         _resp_dict['current_version'] = _resp_dict.pop("@version")
         _record_message = _resp_dict
-
-
-    '''
-    _doc = client_handle.command(_command_string)
-    if len(_doc) > 0:
-        _record_message = _doc[0].oRecordData
-    '''
 
     return _record_message
 
@@ -259,7 +254,6 @@ def _do_action_on_relation1(action_type, artifact_id):
 
 
 def _do_action_on_relation(action_type, artifact_id):
-
     _record_message = {'SLB-Message': 'Artifact {} does not exists'.format(artifact_id)}
     _command_string = _relation_string[action_type].format(_exists_string.format(artifact_id))
 
@@ -275,7 +269,7 @@ def _do_action_on_relation(action_type, artifact_id):
 def _do_action_on_artifact(action_type, json_string=None, artifact_id=None):
 
     if action_type in 'put':
-        _json_doc = _put_json_doc(_client_handle, json_string)
+        _json_doc = _put_json_doc(json_string)
         return  _json_doc
 
     elif action_type in 'get':
