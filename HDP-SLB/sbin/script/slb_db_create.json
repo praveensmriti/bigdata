@@ -1,39 +1,17 @@
-{ "transaction" : true, 
+{ "transaction" : false, 
   "operations" : [ 
     {
       "type" : "script",
       "language" : "sql",
       "script" : [ "create class Folder extends V",
-                   "create property Folder.aid STRING",
-                   "create property Folder.name STRING",
-                   "alter property Folder.aid MANDATORY true",
-                   "alter property Folder.aname MANDATORY true",
                    "create class WellCollection extends V",
-                   "create property WellCollection.aid STRING",
-                   "create property WellCollection.aname STRING",
-                   "alter property WellCollection.aid MANDATORY true",
-                   "alter property WellCollection.aname MANDATORY true",
                    "create class Well extends V",
-                   "create property Well.aid STRING",
-                   "create property Well.aname STRING",
-                   "alter property Well.aid MANDATORY true",
-                   "alter property Well.aname MANDATORY true",
                    "create class Survey extends V",
-                   "create property Survey.aid STRING",
-                   "create property Survey.aname STRING",
-                   "alter property Survey.aid MANDATORY true",
-                   "alter property Survey.aname MANDATORY true",
                    "create class Log extends V",
-                   "create property Log.aid STRING",
-                   "create property Log.aname STRING",
-                   "alter property Log.aid MANDATORY true",
-                   "alter property Log.aname MANDATORY true",
                    "create class Link extends E",
-                   "create property Link.LinkType STRING",
-                   "alter property Link.LinkType MANDATORY true",
                    "let folder_rid = insert into Folder content {'aid' : 'folder1id','aname':'folder1'}",
                    "let wellcoll_rid = insert into WellCollection content {'aid' : 'wellcollection1id','aname':'wellcollection1'}",
-                   "create edge Link Set LinkType = 'Explicitt'  from $folder_rid to $wellcoll_rid retry 100" ]
+                   "create edge Link Set LinkType = 'Explicit'  from $folder_rid to $wellcoll_rid" ]
     }
   ]
 }

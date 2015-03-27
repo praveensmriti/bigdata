@@ -2,7 +2,7 @@
 
 import argparse
 import sys, os
-import json
+import json, requests
 from time import time
 from ConfigParser import ConfigParser
 from termcolor import colored as color
@@ -72,31 +72,10 @@ def _modify_config(section_name, config_name_value_dict):
         sys.exit(1)
 
 
-'''orientdb_host_ip      = 192.168.56.101
-orientdb_host_name    = hdpclient.localdomain
-orientdb_binary_port  = 2424
-orientdb_rest_port    = 2480
-
-orientdb_user         = root
-orientdb_password     = slbroot
-
-slb_database          = WellSurveyGraph
-slb_database_user     = admin
-slb_database_password = admin
-
-o_slb_base_rest_url   = http://%(orientdb_host_name)s:%(orientdb_rest_port)s/query/%(slb_database)s/sql/{} '''
-
-
-
-
-def _get_client_connection(conf_dict):
+def _get_client_connection(host, port, user, password):
     try:
-        HOST = conf_dict['orientdb_host_name']
-        PORT = int(conf_dict['orientdb_binary_port'])
-        USER = conf_dict['orientdb_user']
-        PASSWORD = conf_dict['orientdb_password']
-        _client_handle = OrientDB(HOST, PORT)
-        _client_handle.connect(USER, PASSWORD)
+        _client_handle = OrientDB(host, port)
+        _client_handle.connect(user, password)
     except Exception as e:
         print color("Error getting OrientDB connection : " + e.message, 'red')
         sys.exit(1)
@@ -105,21 +84,44 @@ def _get_client_connection(conf_dict):
 
 def _create_db_graph_objects(c_handle, conf_dict):
     try:
-        if conf_dict['slb_db_create'] == 'yes':
-            _slb_db = conf_dict['slb_database']
-            _slb_db_user = conf_dict['slb_database_user']
-            _slb_db_pwd = conf_dict['slb_database_password']
+        if conf_dict['orientdb_slb_db_create'] == 'yes':
+            _slb_db_create_file = conf_dict['db_create_script_file']
+            _batch_url          = conf_dict['o_slb_batch_rest_url']
+            
+            if c_handle.db_exists(_slb_db):
+                #return __message('Database {} already exists'.format(_slb_db))
+                pass
+            else:
+                # Create SLB graph database
+                c_handle.db_create(_slb_db, pyorient.DB_TYPE_GRAPH, pyorient.STORAGE_TYPE_PLOCAL)
+                c_handle.db_open(_slb_db, _slb_db_user, _slb_db_pwd)
 
-            # Create SLB graph database
-            c_handle.db_create(_slb_db, pyorient.DB_TYPE_GRAPH, pyorient.STORAGE_TYPE_PLOCAL)
-            c_handle.db_open(_slb_db, _slb_db_user, _slb_db_pwd)
+                _site_root = os.path.realpath(os.path.dirname(__file__))
+                _script_path = os.path.join(_site_root, "script", _slb_db_create_file)
 
+                if not os.path.exists(_script_path):
+                    return __message('Script file {} does not exists to be executed'.format(_slb_db_create_file))
+
+                _script_json = json.dumps(json.load(open(_script_path)))
+                _resp = _play_http_request(_batch_url, 'post', _script_json)
     except Exception as e:
         print color("Error creating graph database objects : " + e.message, 'red')
         sys.exit(1)
-    return 'Success'
+    return __message("DB create module execution is successful")
 
 
+
+def _play_http_request(url, verb_type, json_doc=None):
+    _headers  = {'content-type': 'application/json'}
+
+    if verb_type == 'post':
+        _resp = requests.post(url, data=json_doc, headers=_headers, auth=(_slb_db_user, _slb_db_pwd))
+    elif verb_type == 'get':
+        _resp = requests.get(url, auth=(_slb_db_user, _slb_db_pwd))
+        return _resp.json()
+
+    return __message(str(_resp))
+    
 
 def _put_json_doc(client_handle, json_string):
     
@@ -178,14 +180,24 @@ def _put_json_doc(client_handle, json_string):
 
 def _get_artifact(client_handle, artifact_id):
 
-    _command_string = _get_string.format(artifact_id) 
-    _doc = client_handle.command(_command_string)
     _record_message = {'SLB-Message': 'Artifact {} does not exists'.format(artifact_id)}
+    _command_string = _get_string.format(artifact_id)
 
+    _query_url = _config_dict['o_slb_base_rest_url'].format(_command_string)
+    _resp = _play_http_request(_query_url, 'get')
+
+    if len(_resp['result']) > 0:
+        _resp_dict = _resp['result'][0]
+        _resp_dict.pop("@type")
+        _resp_dict['artifact_type'] = _resp_dict.pop("@class")
+        _resp_dict['current_version'] = _resp_dict.pop("@version")
+        _record_message = _resp_dict
+
+    '''_doc = client_handle.command(_command_string)
     if len(_doc) > 0:
-        _record_message = _doc[0].oRecordData
-    return _record_message
+        _record_message = _doc[0].oRecordData'''
 
+    return _record_message
 
 
 def __message(message):
@@ -235,7 +247,7 @@ def _do_action_on_relation(action_type, artifact_id):
         for i in _command_status:
             _artifact_json = {}
             try:
-                _artifact_json[i.oRecordData['name']] = i.oRecordData
+                _artifact_json[i.oRecordData['aname']] = i.oRecordData
             except:
                 _artifact_json['tempname'] = str(i.oRecordData)
             _traverse_dict['SLB-Artifact-Tree'].append(_artifact_json) 
@@ -299,13 +311,19 @@ def main():
 
 try:
     _config_dict = _initialize_credentials()
-    _client_handle = _get_client_connection(_config_dict)
-
-    #_db_status = _create_db_graph_objects(_client_handle, _config_dict)
 
     _slb_db = _config_dict['slb_database']
     _slb_db_user = _config_dict['slb_database_user']
     _slb_db_pwd = _config_dict['slb_database_password']
+
+    _host = _config_dict['orientdb_host_name']
+    _port = int(_config_dict['orientdb_binary_port'])
+    _user = _config_dict['orientdb_user']
+    _password = _config_dict['orientdb_password']
+
+    _client_handle = _get_client_connection(_host, _port, _user, _password)
+
+    _db_status = _create_db_graph_objects(_client_handle, _config_dict)
     _client_handle.db_open(_slb_db, _slb_db_user, _slb_db_pwd)
 
 except Exception as e:
