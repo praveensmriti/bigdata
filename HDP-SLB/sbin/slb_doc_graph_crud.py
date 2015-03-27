@@ -124,6 +124,8 @@ def _play_http_request(url, verb_type, json_doc=None):
 
     return __message(str(_resp))
     
+_get_rid = 'select @rid as rid from V where aid = {}'
+
 
 def _put_json_doc(json_string):
     
@@ -143,19 +145,18 @@ def _put_json_doc(json_string):
         _parent_rid = None
 
         if _parent_aid is not None:
-            _parent_list = client_handle.command(_rid_string.format(_parent_aid))
-            if len(_parent_list) > 0:
-                _parent_rid = _parent_list[0].rid
+            _command_string = _get_rid.format(_parent_aid)
+            _query_url = _config_dict['o_slb_base_rest_url'].format(_command_string)
+            _resp = _play_http_request(_query_url, 'get')
+
+            if len(_resp['result']) > 0:
+                _parent_rid = _resp['result'][0]['rid']
             else:
-                return __message("Parent artifact {} does not exists".format(_parent_aid))
+                return __message("Parent artifactID {} does not exists".format(_parent_aid))
 
         _artifact_type = _json_data['artifact_type']
 
-        if _artifact_type is not None and _artifact_type in _artifact_type_list:
-            _type_list = client_handle.command(_type_string.format(_artifact_type))
-            if len(_type_list) == 0:
-                return __message("Artifact type {} does not exists".format(_artifact_type))
-        else:
+        if _artifact_type is not None and _artifact_type.lower() in _artifact_type_list:
             return __message("Artifact type is invalid or null")
 
         _artifact_id = _json_data['payload']['aid']
@@ -172,7 +173,14 @@ def _put_json_doc(json_string):
         return __message("Error updating artifact : " + e.message)
 
     try:
-        _link_count = []
+        _command_string = _link_exists.format(_parent_rid, _rid)
+        _query_url = _config_dict['o_slb_base_rest_url'].format(_command_string)
+        _resp = _play_http_request(_query_url, 'get')
+
+        if len(_resp['result']) > 0:
+            _parent_rid = _resp['result'][0]['rid']
+
+        # Link update and creation
         if _parent_rid is not None:
             _link_count = client_handle.command(_link_exists.format(_parent_rid, _rid))
 
