@@ -189,13 +189,16 @@ def _get_artifact(client_handle, artifact_id):
     if len(_resp['result']) > 0:
         _resp_dict = _resp['result'][0]
         _resp_dict.pop("@type")
-        _resp_dict['artifact_type'] = _resp_dict.pop("@class")
+        dresp_dict['artifact_type'] = _resp_dict.pop("@class")
         _resp_dict['current_version'] = _resp_dict.pop("@version")
         _record_message = _resp_dict
 
-    '''_doc = client_handle.command(_command_string)
+
+    '''
+    _doc = client_handle.command(_command_string)
     if len(_doc) > 0:
-        _record_message = _doc[0].oRecordData'''
+        _record_message = _doc[0].oRecordData
+    '''
 
     return _record_message
 
@@ -210,8 +213,6 @@ def _validate_artifact(artifact_id):
     _command_status = _client_handle.command(_command_string)
     
     if len(_command_status) > 0:
-        #return __message(_command_status[0]._OrientRecord__rid)
-        #_dict['rid'] = _command_status[0].rid
         _dict['rid'] = _command_status[0]._OrientRecord__rid
     else:
         return __message('Artifact {} does not exist'.format(artifact_id))
@@ -231,16 +232,12 @@ def _do_action_on_json(json_file):
     return _data
 
 
-def _do_action_on_relation(action_type, artifact_id):
-
+def _do_action_on_relation1(action_type, artifact_id):
     _exists_status = _validate_artifact(artifact_id)
-
     if 'rid' not in _exists_status:
         return _exists_status
-
     _rid = _exists_status['rid']
     _command_string = _relation_string[action_type].format(_rid)
-
     try:
         _traverse_dict = {'SLB-Artifact-Tree':[]}
         _command_status = _client_handle.command(_command_string)
@@ -256,6 +253,11 @@ def _do_action_on_relation(action_type, artifact_id):
         return _traverse_dict
     except Exception as e:
         return __message('Error executing relation command : ' + e.message)
+
+
+def _do_action_on_relation(action_type, artifact_id):
+
+    _command_string = _relation_string[action_type].format(artifact_id)
 
 
 def _do_action_on_artifact(action_type, json_string=None, artifact_id=None):
