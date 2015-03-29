@@ -2,7 +2,7 @@
 
 import slb_doc_graph_crud as dgc
 import json
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template, url_for
 from flask.ext.restful import reqparse, abort, Api, Resource
 from flask.ext.cors import CORS
 
@@ -12,11 +12,14 @@ api = Api(app)
 
 #_client_handle = dgc._client_handle
 
-
 def abort_if_artifact_doesnt_exist(artifact_id):
     if artifact_id not in ['xxxx']: # to be implemented
         abort(404, message="Artifact {} doesn't exist".format(artifact_id))
 
+
+@app.route('/')
+def homePage():
+    return render_template("index.html")
 
 class Artifact(Resource):
     def get(self, artifact_id):
