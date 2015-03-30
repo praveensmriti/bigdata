@@ -19,7 +19,11 @@ def abort_if_artifact_doesnt_exist(artifact_id):
 
 @app.route('/')
 def homePage():
-    return render_template("index1.html")
+    return render_template("index.html")
+
+@app.route('/graph')
+def graphPage():
+    return render_template("graph.html")
 
 class Artifact(Resource):
     def get(self, artifact_id):
