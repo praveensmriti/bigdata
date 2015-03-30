@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>HortonWorks-Schlumberger Artifact App</title>
+    <title>HortonWorks-Schlumberger Artifact Management Application</title>
 
     <link href="/static/css/bootstrap.min.css" rel="stylesheet">
 	<link href="/static/css/graph.css" rel="stylesheet">
@@ -13,6 +13,7 @@
     <script src="/static/js/bootstrap.min.js"></script>
   </head>
   <body>
+	<body>
 	<nav class="navbar navbar-inverse " role="navigation">
 		<div class="container-fluid">
 			<div class="navbar-header">
@@ -24,8 +25,8 @@
 
 			<div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
 				<ul class="nav  nav-pills navbar-nav">
-					<li class="aactive"><a href="#">CheckIn Artifact</a></li>
-					<li><a href="/graph">CheckOut Artifact</a></li>
+					<li><a href="/checkin">CheckIn Artifact</a></li>
+					<li><a href="/checkout">CheckOut Artifact</a></li>
 					<li><a href="#">Create Artifact Relationship</a></li>
 					<li class="dropdown">
 						<a href="#" class="dropdown-toggle" data-toggle="dropdown">Artifact Tree <span class="caret"></span></a>
@@ -33,7 +34,7 @@
 							<li><a href="#">Parent Tree</a></li>
 							<li><a href="#">Children Tree</a></li>
 							<li class="divider"></li>
-							<li><a href="#">Full Artifact Tree</a></li>
+							<li><a href="/graph">Full Artifact Tree</a></li>
 							<li class="divider"></li>
 						</ul>
 					</li>
@@ -46,10 +47,13 @@
 				</form>
 			</div>
 		</div>
-	</nav>
-		
-    {% block body %}
-    {% endblock %}
+	</nav> 
+	</body>
 
+	<body>
+		{% block body %}
+		{% endblock %}
+    </body>	
+	
   </body>
 </html>

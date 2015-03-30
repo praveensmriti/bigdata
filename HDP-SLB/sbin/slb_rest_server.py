@@ -25,6 +25,30 @@ def homePage():
 def graphPage():
     return render_template("graph.html")
 
+@app.route('/checkin')
+def checkinPage():
+    return render_template("check_in_artifact.html")
+
+@app.route('/checkout')
+def checkoutPage():
+    return render_template("check_out_artifact.html")
+
+
+@app.route('/create_link')
+def createLink():
+    return render_template("create_link.html")
+
+
+@app.route('/get_children')
+def getChildren():
+    return render_template("get_children.html")
+
+
+@app.route('/get_parent')
+def getParent():
+    return render_template("get_parent.html")
+
+
 class Artifact(Resource):
     def get(self, artifact_id):
         _return_json = dgc._do_action_on_artifact('get', None, artifact_id)
