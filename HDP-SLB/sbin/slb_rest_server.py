@@ -21,9 +21,6 @@ def abort_if_artifact_doesnt_exist(artifact_id):
 def homePage():
     return render_template("index.html")
 
-@app.route('/graph')
-def graphPage():
-    return render_template("graph.html")
 
 @app.route('/checkin')
 def checkinPage():
@@ -39,14 +36,39 @@ def createLink():
     return render_template("create_link.html")
 
 
-@app.route('/get_children')
-def getChildren():
-    return render_template("get_children.html")
+## JSON Tree
+
+@app.route('/get_children_json')
+def getChildrenJSON():
+    return render_template("children_json_tree.html")
 
 
-@app.route('/get_parent')
-def getParent():
-    return render_template("get_parent.html")
+@app.route('/get_parent_json')
+def getParentJSON():
+    return render_template("parent_json_tree.html")
+
+
+@app.route('/get_all_json')
+def getAllJSON():
+    return render_template("all_json_tree.html")
+
+
+## Graph Tree
+
+@app.route('/get_all_graph')
+def getAllGraph():
+    return render_template("all_graph_tree.html")
+
+
+@app.route('/get_children_graph')
+def getChildrenGraph():
+    return render_template("children_graph_tree.html")
+
+
+@app.route('/get_parent_graph')
+def getParentGraph():
+    return render_template("parent_graph_tree.html")
+
 
 
 class Artifact(Resource):

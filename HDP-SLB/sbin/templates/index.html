@@ -27,18 +27,30 @@
 				<ul class="nav  nav-pills navbar-nav">
 					<li><a href="/checkin">CheckIn Artifact</a></li>
 					<li><a href="/checkout">CheckOut Artifact</a></li>
-					<li><a href="#">Create Artifact Relationship</a></li>
+					<li><a href="/create_link">Create Link</a></li>
 					<li class="dropdown">
-						<a href="#" class="dropdown-toggle" data-toggle="dropdown">Artifact Tree <span class="caret"></span></a>
+						<a href="#" class="dropdown-toggle" data-toggle="dropdown">Tree (JSON)<span class="caret"></span></a>
 						<ul class="dropdown-menu" role="menu">
-							<li><a href="#">Parent Tree</a></li>
-							<li><a href="#">Children Tree</a></li>
+							<li><a href="/get_parent_json">Parent Tree (JSON)</a></li>
+							<li><a href="/get_children_json">Children Tree (JSON)</a></li>
 							<li class="divider"></li>
-							<li><a href="/graph">Full Artifact Tree</a></li>
+							<li><a href="/get_all_json">Full Artifact Tree (JSON)</a></li>
 							<li class="divider"></li>
 						</ul>
 					</li>
+					<li class="dropdown">
+						<a href="#" class="dropdown-toggle" data-toggle="dropdown">Tree (Graph)<span class="caret"></span></a>
+						<ul class="dropdown-menu" role="menu">
+							<li><a href="/get_parent_graph">Parent Tree (Graph)</a></li>
+							<li><a href="/get_children_graph">Children Tree (Graph)</a></li>
+							<li class="divider"></li>
+							<li><a href="/get_all_graph">Full Artifact Tree (Graph)</a></li>
+							<li class="divider"></li>
+						</ul>
+					</li>
+					
 				</ul>
+				
 				<form class="navbar-form navbar-left" role="search">
 					<div class="form-group">
 						<input type="text" class="form-control" placeholder="Artifact ID">

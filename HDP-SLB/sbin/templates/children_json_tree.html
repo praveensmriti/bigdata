@@ -1,0 +1,21 @@
+{% extends "index.html" %}
+{% block body %}
+		<form class="navbar-form">
+			<div class="form-group">
+			    <h2>Children JSON Tree</h2><br><br>
+				Artifact ID <input id="aid" name="aid" type="text" class="form-control" placeholder="Artifact ID">
+			</div>
+			<button id="a_submit" name="a_submit" type="button" class="btn btn-primary"> Get Children </button>
+		</form>
+		<iframe id="iframeid" name="iframeid" width="100%" height="400" src=""></iframe>
+		<img src="/static/image/htnwrks.png" alt="HortonWorks" style="width:50px;height:50%;float:right;background-color:green">
+	<script>
+			$(document).ready(function(){
+						$("#a_submit").click(function(e){ 
+														//alert($("#aid").val());	
+														$("#iframeid").attr('src',"http://192.168.56.101:8000/api/v1/artifact/tree/children/" + $("#aid").val()); 													 
+														});
+												});
+    </script>
+	
+{% endblock %}
