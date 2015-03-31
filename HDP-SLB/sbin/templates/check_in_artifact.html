@@ -1,7 +1,28 @@
 {% extends "index.html" %}
 {% block body %}
-	<p style="color:red;background-color:white">
-	    <br><br><br>
-		Praveen checkin artifact
-	</p>
+    <div id="main_id">
+		<form>
+			<input type="hidden" name="id" value="" id="id">
+            <input type="hidden" name="access_token" value="xxxxxxxx" id="access_token">
+            <input type="submit" name="a_submit" id="a_submit" value="Check In">
+		</form>
+        <div id="resp_div_id"></div>
+	</div>
+    <script>
+		$(document).ready(function(){
+										$("#a_submit").click(function(e){   
+																			e.preventDefault();
+																			$.ajax({type: "GET",
+																					url: "http://192.168.56.101:8000/api/v1/artifact/folder1id",
+																					data: { artifact_type: $("#atype").val(), parent_aid: $("#parent_aid").val(),
+																					        payload: $("#payload").val()
+																					   	  },
+																					success:function(result){
+																												$("#resp_div_id").html(result);
+																											}
+																					});
+																		 });
+									});
+    </script>
+	
 {% endblock %}
