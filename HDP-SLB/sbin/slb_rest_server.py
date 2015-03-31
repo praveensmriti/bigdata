@@ -62,7 +62,22 @@ def getAllGraph():
 
 @app.route('/get_children_graph')
 def getChildrenGraph():
-    return render_template("children_graph_tree.html")
+    glist = [{"source": "Microsoft", "target": "Amazon", "type": "licensing"},
+ 	     {"source": "Microsoft", "target": "HTC", "type": "licensing"},
+	     {"source": "Samsung", "target": "Apple", "type": "suit"},
+	     {"source": "Motorola", "target": "Apple", "type": "suit"},
+	     {"source": "Nokia", "target": "Apple", "type": "resolved"},
+	     {"source": "HTC", "target": "Apple", "type": "suit"},
+	     {"source": "Kodak", "target": "Apple", "type": "suit"},
+	     {"source": "Microsoft", "target": "Barnes & Noble", "type": "suit"},
+	     {"source": "Microsoft", "target": "Foxconn", "type": "suit"},
+	     {"source": "Oracle", "target": "Google", "type": "suit"},
+	     {"source": "Apple", "target": "HTC", "type": "suit"},
+	     {"source": "Praveen", "target": "Dhriti", "type": "suit"},
+	     {"source": "Praveen", "target": "Smriti-Seema", "type": "suit"}
+	    ]
+    
+    return render_template("children_graph_tree.html", gdata=glist)
 
 
 @app.route('/get_parent_graph')
